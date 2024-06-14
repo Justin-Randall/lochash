@@ -1,2 +1,3 @@
-# lochash
-n-dimensional location hash spatial database
+# Location Hash (lochash)
+
+LocHash is an *n*-dimensional location hash spatial database.
