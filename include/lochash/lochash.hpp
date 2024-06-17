@@ -5,7 +5,10 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 /**
  * Combines the hash of a single value with a seed value.
@@ -19,7 +22,6 @@ template <typename T>
 std::size_t hash_combine(std::size_t seed, const T & value)
 {
 	std::hash<T> hasher;
-
 	// Combines the current seed with the hash of the value using bitwise operations
 	//
 	// Explanation:
@@ -34,13 +36,14 @@ std::size_t hash_combine(std::size_t seed, const T & value)
 	//   because they operate directly on the binary representation of the numbers.
 	// - They help in spreading out the bits more uniformly, which reduces the chances of hash collisions.
 	// - The combination of shifts and XOR operations helps in mixing the bits of the hash value and seed, leading to a
-	//   more evenly distributed hash result
-	// - Div, for example, can burn 39 cycles on Skylake, while shifts and XORs can be done in 1 cycle.
+	// more
+	//   evenly distributed hash result.
 	return seed ^ (hasher(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
 }
 
 /**
  * Recursively combines the hash of multiple values with a seed value.
+ * This is a compile-time recursion using variadic templates.
  *
  * @tparam T The type of the first value to hash.
  * @tparam Args The types of the remaining values to hash.
@@ -53,6 +56,7 @@ template <typename T, typename... Args>
 std::size_t hash_combine(std::size_t seed, const T & value, const Args &... args)
 {
 	seed = hash_combine(seed, value);
+	// Recursively combine hashes of remaining values
 	return hash_combine(seed, args...);
 }
 
@@ -69,7 +73,6 @@ template <typename T, std::size_t Precision>
 constexpr std::size_t quantize_value(T value)
 {
 	static_assert(std::is_arithmetic<T>::value, "Only arithmetic types are supported");
-
 	// Using bitwise AND with ~(Precision - 1) to quantize the value
 	// This is more performant than using division or modulo operations because
 	// bitwise operations are generally faster and have lower latency in modern CPUs.
@@ -78,7 +81,7 @@ constexpr std::size_t quantize_value(T value)
 	return static_cast<std::size_t>(value) & ~(Precision - 1);
 }
 
-// Helper metafunction to check if all types are the same
+// Helper metafunction to check if all types in a parameter pack are the same
 template <typename T, typename... Args>
 struct are_all_same;
 
@@ -115,7 +118,6 @@ std::size_t generate_hash(const T & value, const Args &... args)
 	// Initial seed with quantized first value
 	// Quantization ensures values are grouped into buckets defined by Precision
 	std::size_t seed = hash_combine(0, quantize_value<T, Precision>(value));
-
 	// Recursively combine the hash of remaining quantized values
 	// The fold expression ((seed = hash_combine(seed, quantize_value<T, Precision>(args))), ...)
 	// ensures each argument is processed in order, combining their hashes into the final seed.
@@ -143,7 +145,7 @@ class LocationHash
 	 * @param object Pointer to the associated object (optional, only if ObjectType is not void).
 	 * @param coordinates Variadic coordinate inputs.
 	 */
-	template <typename... Args>
+	template <typename... Args, typename = std::enable_if_t<!std::is_void<ObjectType>::value>>
 	void add(ObjectType * object, const Args &... coordinates)
 	{
 		static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
@@ -153,6 +155,18 @@ class LocationHash
 		CoordinateVector coord_vec = {static_cast<CoordinateType>(coordinates)...};
 		std::size_t      hash_key  = generate_hash<Precision>(coordinates...);
 		data_[hash_key].emplace_back(coord_vec, object);
+	}
+
+	template <typename... Args, typename = std::enable_if_t<std::is_void<ObjectType>::value>>
+	void add(const Args &... coordinates)
+	{
+		static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
+		static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
+		CoordinateVector coord_vec = {static_cast<CoordinateType>(coordinates)...};
+		std::size_t      hash_key  = generate_hash<Precision>(coordinates...);
+		data_[hash_key].emplace_back(coord_vec, nullptr);
 	}
 
 	/**
@@ -181,11 +195,51 @@ class LocationHash
 	/**
 	 * Removes a coordinate and optionally an associated object from the appropriate bucket.
 	 *
-	 * @param object Pointer to the associated object (optional, only if ObjectType is not void).
 	 * @param coordinates Variadic coordinate inputs.
 	 * @return True if an item was removed, false otherwise.
 	 */
-	template <typename... Args>
+	template <typename... Args, typename = std::enable_if_t<std::is_void<ObjectType>::value>>
+	bool remove(const Args &... coordinates)
+	{
+		static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
+		static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
+		std::size_t hash_key = generate_hash<Precision>(coordinates...);
+		auto        it       = data_.find(hash_key);
+		if (it != data_.end()) {
+			auto & bucket = it->second;
+			for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
+				// Remove by coordinate comparison with epsilon for floating points
+				bool                                        match       = true;
+				std::array<CoordinateType, sizeof...(Args)> coord_array = {static_cast<CoordinateType>(coordinates)...};
+				for (std::size_t i = 0; i < coord_array.size(); ++i) {
+					if constexpr (std::is_floating_point<CoordinateType>::value) {
+						if (std::fabs(bucket_it->first[i] - coord_array[i]) >
+						    std::numeric_limits<CoordinateType>::epsilon()) {
+							match = false;
+							break;
+						}
+					} else {
+						if (bucket_it->first[i] != coord_array[i]) {
+							match = false;
+							break;
+						}
+					}
+				}
+				if (match) {
+					bucket.erase(bucket_it);
+					if (bucket.empty()) {
+						data_.erase(it);
+					}
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	template <typename... Args, typename = std::enable_if_t<!std::is_void<ObjectType>::value>>
 	bool remove(ObjectType * object, const Args &... coordinates)
 	{
 		static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
@@ -197,47 +251,76 @@ class LocationHash
 		if (it != data_.end()) {
 			auto & bucket = it->second;
 			for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
-				if (object != nullptr) {
-					// Remove by object pointer comparison
-					if (bucket_it->second == object) {
-						bucket.erase(bucket_it);
-						if (bucket.empty()) {
-							data_.erase(it);
-						}
-						return true;
+				// Remove by object pointer comparison
+				if (bucket_it->second == object) {
+					bucket.erase(bucket_it);
+					if (bucket.empty()) {
+						data_.erase(it);
 					}
-				} else {
-					// Remove by coordinate comparison with epsilon for floating points
-					bool                                        match       = true;
-					std::array<CoordinateType, sizeof...(Args)> coord_array = {coordinates...};
-					for (std::size_t i = 0; i < coord_array.size(); ++i) {
-						if constexpr (std::is_floating_point<CoordinateType>::value) {
-							if (std::fabs(bucket_it->first[i] - coord_array[i]) >
-							    std::numeric_limits<CoordinateType>::epsilon()) {
-								match = false;
-								break;
-							}
-						} else {
-							if (bucket_it->first[i] != coord_array[i]) {
-								match = false;
-								break;
-							}
-						}
-					}
-					if (match) {
-						bucket.erase(bucket_it);
-						if (bucket.empty()) {
-							data_.erase(it);
-						}
-						return true;
-					}
+					return true;
 				}
 			}
 		}
 		return false;
 	}
 
+	/**
+	 * Moves a coordinate and optionally an associated object from one bucket to another.
+	 *
+	 * @param old_coordinates Variadic coordinate inputs for the current location.
+	 * @param new_coordinates Variadic coordinate inputs for the new location.
+	 * @return True if an item was moved, false otherwise.
+	 */
+	template <typename... OldArgs, typename... NewArgs>
+	bool move(const std::tuple<OldArgs...> & old_coordinates, const std::tuple<NewArgs...> & new_coordinates)
+	{
+		static_assert(sizeof...(OldArgs) > 0, "At least one old coordinate must be provided.");
+		static_assert(sizeof...(NewArgs) > 0, "At least one new coordinate must be provided.");
+		static_assert(are_all_same<CoordinateType, OldArgs...>::value, "All old coordinates must be of the same type.");
+		static_assert(are_all_same<CoordinateType, NewArgs...>::value, "All new coordinates must be of the same type.");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
+		return move_impl(std::index_sequence_for<OldArgs...>(), std::index_sequence_for<NewArgs...>(), old_coordinates,
+		                 new_coordinates);
+	}
+
+	template <typename... OldArgs, typename... NewArgs, typename = std::enable_if_t<!std::is_void<ObjectType>::value>>
+	bool move(ObjectType * object, const std::tuple<OldArgs...> & old_coordinates,
+	          const std::tuple<NewArgs...> & new_coordinates)
+	{
+		static_assert(sizeof...(OldArgs) > 0, "At least one old coordinate must be provided.");
+		static_assert(sizeof...(NewArgs) > 0, "At least one new coordinate must be provided.");
+		static_assert(are_all_same<CoordinateType, OldArgs...>::value, "All old coordinates must be of the same type.");
+		static_assert(are_all_same<CoordinateType, NewArgs...>::value, "All new coordinates must be of the same type.");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
+		return move_impl(std::index_sequence_for<OldArgs...>(), std::index_sequence_for<NewArgs...>(), object,
+		                 old_coordinates, new_coordinates);
+	}
+
   private:
+	template <std::size_t... OldIndices, std::size_t... NewIndices, typename... OldArgs, typename... NewArgs>
+	bool move_impl(std::index_sequence<OldIndices...>, std::index_sequence<NewIndices...>,
+	               const std::tuple<OldArgs...> & old_coordinates, const std::tuple<NewArgs...> & new_coordinates)
+	{
+		if (remove(std::get<OldIndices>(old_coordinates)...)) {
+			add(std::get<NewIndices>(new_coordinates)...);
+			return true;
+		}
+		return false;
+	}
+
+	template <std::size_t... OldIndices, std::size_t... NewIndices, typename... OldArgs, typename... NewArgs>
+	bool move_impl(std::index_sequence<OldIndices...>, std::index_sequence<NewIndices...>, ObjectType * object,
+	               const std::tuple<OldArgs...> & old_coordinates, const std::tuple<NewArgs...> & new_coordinates)
+	{
+		if (remove(object, std::get<OldIndices>(old_coordinates)...)) {
+			add(object, std::get<NewIndices>(new_coordinates)...);
+			return true;
+		}
+		return false;
+	}
+
 	std::unordered_map<std::size_t, BucketContent> data_;
 };
 
