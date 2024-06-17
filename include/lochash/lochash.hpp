@@ -1,6 +1,7 @@
 #ifndef _INCLUDED_lochash_hpp
 #define _INCLUDED_lochash_hpp
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -14,7 +15,8 @@
  * @param value The value to hash.
  * @return A combined hash value.
  */
-template <typename T> std::size_t hash_combine(std::size_t seed, const T & value)
+template <typename T>
+std::size_t hash_combine(std::size_t seed, const T & value)
 {
 	std::hash<T> hasher;
 
@@ -63,7 +65,8 @@ std::size_t hash_combine(std::size_t seed, const T & value, const Args &... args
  * @param value The value to quantize.
  * @return The quantized value.
  */
-template <typename T, std::size_t Precision> constexpr std::size_t quantize_value(T value)
+template <typename T, std::size_t Precision>
+constexpr std::size_t quantize_value(T value)
 {
 	static_assert(std::is_arithmetic<T>::value, "Only arithmetic types are supported");
 
@@ -76,15 +79,19 @@ template <typename T, std::size_t Precision> constexpr std::size_t quantize_valu
 }
 
 // Helper metafunction to check if all types are the same
-template <typename T, typename... Args> struct are_all_same;
+template <typename T, typename... Args>
+struct are_all_same;
 
-template <typename T> struct are_all_same<T> : std::true_type {
+template <typename T>
+struct are_all_same<T> : std::true_type {
 };
 
-template <typename T, typename U, typename... Args> struct are_all_same<T, U, Args...> : std::false_type {
+template <typename T, typename U, typename... Args>
+struct are_all_same<T, U, Args...> : std::false_type {
 };
 
-template <typename T, typename... Args> struct are_all_same<T, T, Args...> : are_all_same<T, Args...> {
+template <typename T, typename... Args>
+struct are_all_same<T, T, Args...> : are_all_same<T, Args...> {
 };
 
 /**
@@ -103,6 +110,7 @@ std::size_t generate_hash(const T & value, const Args &... args)
 {
 	static_assert(std::is_arithmetic<T>::value, "Only arithmetic types are supported");
 	static_assert(are_all_same<T, Args...>::value, "All arguments must be of the same type");
+	static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
 
 	// Initial seed with quantized first value
 	// Quantization ensures values are grouped into buckets defined by Precision
@@ -114,5 +122,123 @@ std::size_t generate_hash(const T & value, const Args &... args)
 	((seed = hash_combine(seed, quantize_value<T, Precision>(args))), ...);
 	return seed;
 }
+
+/**
+ * LocationHash class to manage spatial hashing of n-dimensional coordinates.
+ *
+ * @tparam Precision The precision value for quantization. Must be a power of two.
+ * @tparam CoordinateType The type of the coordinates. Must be an arithmetic type.
+ * @tparam ObjectType The type of the associated object. Defaults to void if no associated object is stored.
+ */
+template <std::size_t Precision, typename CoordinateType, typename ObjectType = void>
+class LocationHash
+{
+  public:
+	using CoordinateVector = std::vector<CoordinateType>;
+	using BucketContent    = std::vector<std::pair<CoordinateVector, ObjectType *>>;
+
+	/**
+	 * Adds coordinates and optionally an associated object pointer to the appropriate bucket.
+	 *
+	 * @param object Pointer to the associated object (optional, only if ObjectType is not void).
+	 * @param coordinates Variadic coordinate inputs.
+	 */
+	template <typename... Args>
+	void add(ObjectType * object, const Args &... coordinates)
+	{
+		static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
+		static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
+		CoordinateVector coord_vec = {static_cast<CoordinateType>(coordinates)...};
+		std::size_t      hash_key  = generate_hash<Precision>(coordinates...);
+		data_[hash_key].emplace_back(coord_vec, object);
+	}
+
+	/**
+	 * Retrieves all coordinates and associated objects within a certain bucket.
+	 *
+	 * @param coordinates Variadic coordinate inputs to determine the bucket.
+	 * @return A reference to the bucket content (vector of coordinates and associated objects).
+	 */
+	template <typename... Args>
+	const BucketContent & query(const Args &... coordinates) const
+	{
+		static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
+		static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
+		std::size_t hash_key = generate_hash<Precision>(coordinates...);
+		auto        it       = data_.find(hash_key);
+		if (it != data_.end()) {
+			return it->second;
+		} else {
+			static const BucketContent empty_bucket;
+			return empty_bucket;
+		}
+	}
+
+	/**
+	 * Removes a coordinate and optionally an associated object from the appropriate bucket.
+	 *
+	 * @param object Pointer to the associated object (optional, only if ObjectType is not void).
+	 * @param coordinates Variadic coordinate inputs.
+	 * @return True if an item was removed, false otherwise.
+	 */
+	template <typename... Args>
+	bool remove(ObjectType * object, const Args &... coordinates)
+	{
+		static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
+		static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
+		std::size_t hash_key = generate_hash<Precision>(coordinates...);
+		auto        it       = data_.find(hash_key);
+		if (it != data_.end()) {
+			auto & bucket = it->second;
+			for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
+				if (object != nullptr) {
+					// Remove by object pointer comparison
+					if (bucket_it->second == object) {
+						bucket.erase(bucket_it);
+						if (bucket.empty()) {
+							data_.erase(it);
+						}
+						return true;
+					}
+				} else {
+					// Remove by coordinate comparison with epsilon for floating points
+					bool                                        match       = true;
+					std::array<CoordinateType, sizeof...(Args)> coord_array = {coordinates...};
+					for (std::size_t i = 0; i < coord_array.size(); ++i) {
+						if constexpr (std::is_floating_point<CoordinateType>::value) {
+							if (std::fabs(bucket_it->first[i] - coord_array[i]) >
+							    std::numeric_limits<CoordinateType>::epsilon()) {
+								match = false;
+								break;
+							}
+						} else {
+							if (bucket_it->first[i] != coord_array[i]) {
+								match = false;
+								break;
+							}
+						}
+					}
+					if (match) {
+						bucket.erase(bucket_it);
+						if (bucket.empty()) {
+							data_.erase(it);
+						}
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+  private:
+	std::unordered_map<std::size_t, BucketContent> data_;
+};
 
 #endif //_INCLUDED_lochash_hpp
