@@ -18,7 +18,7 @@ It also works very well in standalone clients that have millions of objects inst
 
 The use of templates also allows for recursive location databases. 2 or 3 amortized constant-time lookups can handle enormous query spaces. Objects within a few meters may be on a leaf, with the leaf database handling several hundred thousand kilometers, and a parent handling several hundred thousand more of those leaf nodes, etc....
 
-Another advantage of type templating allows integration with other applications. For example, a 3-float coordinate location hash used with UnrealEngine can easily provide a nice helper to convert FVec3 to the tripe-float coordinate tuples used by the LocationHash database.
+Another advantage of type templating allows integration with other applications. For example, a 3-float coordinate location hash used with UnrealEngine can easily provide a nice helper to convert FVec3 to the triple-float coordinate tuples used by the LocationHash database.
 
 ## Performance
 
