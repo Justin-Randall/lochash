@@ -4,6 +4,11 @@
 
 using namespace lochash;
 
+struct TestObject {
+	int         id;
+	std::string name;
+};
+
 // Test querying items in LocationHash with 2D coordinates
 TEST(LocationHelpersTest, QueryBoundingBox2D)
 {

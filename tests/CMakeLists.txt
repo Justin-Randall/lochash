@@ -14,7 +14,9 @@ if(NOT DEFINED HERALD_DISABLE_TESTING)
   set(UNIT_TEST ${PROJECT_NAME}_tests)
 
   add_executable(${UNIT_TEST} "test_${PROJECT_NAME}.cpp"
-    "test_location_hash_algorithm.cpp")
+    "test_location_hash_algorithm.cpp"
+    "test_location_hash_query_distance_squared.cpp"
+  )
 
   target_compile_features(${UNIT_TEST} PRIVATE cxx_std_20)
 

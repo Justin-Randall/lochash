@@ -20,6 +20,12 @@ The use of templates also allows for recursive location databases. 2 or 3 amorti
 
 Another advantage of type templating allows integration with other applications. For example, a 3-float coordinate location hash used with UnrealEngine can easily provide a nice helper to convert FVec3 to the triple-float coordinate tuples used by the LocationHash database.
 
+## Implementation
+
+The implementation relies heavily on the C++ standard library with modern features. Compiler upgrades for optimizations and features come freely. The generated code is already well optimized. Drop-in standard library replacements fine-tuned for specific applications, such as gaming or AI, should work if they are API compliant.
+
+There is liberal use of static_assert<> to unsnarl the worst of compiler errors with template instantiation output to direct users away from improper usage (things like mixing types for coordinates, for example).
+
 ## Performance
 
 (TODO, need to write a perf test suite)
