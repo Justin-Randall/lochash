@@ -20,12 +20,57 @@ The use of templates also allows for recursive location databases. 2 or 3 amorti
 
 Another advantage of type templating allows integration with other applications. For example, a 3-float coordinate location hash used with UnrealEngine can easily provide a nice helper to convert FVec3 to the triple-float coordinate tuples used by the LocationHash database.
 
+The algorithm quantizes coordinates, first converting to native word size (size_t) if they are floating point, then removes precision by some power of 2 before calculating a hash.
+
+So, given a precision of 16 and 3 objects:
+
+```code
+Object("A", 24.4f, 20.0f)
+Object("B", 30.2f, 18.1f)
+Object("C", 50.0f, 40.0f)
+```
+
+The hash algorithm converts and strips precision so that A and B are both at 16, 16, while C is at 48, 32.
+
+```code
+hash(16, 16) = 1234
+hash(48, 32) = 5678
+```
+
+(for example).
+
+As far as the hash algorithm is concerned, A and B are equal. C is not.
+
+Grid Representation of Buckets:
+
+```text
++-----+-----+-----+-----+-----+
+|     |     |     |     |     |
+|     |     |     |     |     |
+|     |     |     |     |     |
++-----+-----+-----+-----+-----+
+|     |     |     |     |     |
+|     |  A  |     |     |     |
+|     |  B  |     |     |     |
++-----+-----+-----+-----+-----+
+|     |     |     |     |     |
+|     |     |     |  C  |     |
+|     |     |     |     |     |
++-----+-----+-----+-----+-----+
+|     |     |     |     |     |
+|     |     |     |     |     |
+|     |     |     |     |     |
++-----+-----+-----+-----+-----+
+|     |     |     |     |     |
+|     |     |     |     |     |
+|     |     |     |     |     |
++-----+-----+-----+-----+-----+
+```
+
+Of course, the location hash only allocates space where locations are added.
+
 ## Implementation
 
-The implementation relies heavily on the C++ standard library with modern features. Compiler upgrades for optimizations and features come freely. The generated code is already well optimized. Drop-in standard library replacements fine-tuned for specific applications, such as gaming or AI, should work if they are API compliant.
+The implementation relies heavily on the C++ standard library with modern features. Compiler upgrades for optimizations and features come freely. The generated code is already well optimized. Drop-in standard library replacements for fine-tuned for specific applications, such as gaming or AI, should work if they are API compliant.
 
 There is liberal use of static_assert<> to unsnarl the worst of compiler errors with template instantiation output to direct users away from improper usage (things like mixing types for coordinates, for example).
-
-## Performance
-
-(TODO, need to write a perf test suite)
