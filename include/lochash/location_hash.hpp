@@ -195,6 +195,8 @@ namespace lochash
 		 */
 		const std::unordered_map<std::size_t, BucketContent> & get_data() const { return data_; }
 
+		void clear() { data_.clear(); }
+
 	  private:
 		template <std::size_t... OldIndices, std::size_t... NewIndices, typename... OldArgs, typename... NewArgs>
 		bool move_impl(std::index_sequence<OldIndices...>, std::index_sequence<NewIndices...>,
