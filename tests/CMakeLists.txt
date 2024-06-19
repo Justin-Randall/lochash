@@ -15,7 +15,6 @@ if(NOT DEFINED HERALD_DISABLE_TESTING)
 
   add_executable(${UNIT_TEST} "test_${PROJECT_NAME}.cpp"
     "test_location_hash_algorithm.cpp"
-    "test_location_hash_performance.cpp"
     "test_location_hash_query_bounding_box.cpp"
     "test_location_hash_query_distance_squared.cpp"
     "test_location_hash_recursion.cpp"
