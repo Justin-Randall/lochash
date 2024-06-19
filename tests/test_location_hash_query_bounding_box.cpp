@@ -1,4 +1,4 @@
-#include "lochash/location_hash_query.hpp"
+#include "lochash/location_hash_query_bounding_box.hpp"
 #include "lochash/lochash.hpp"
 #include "gtest/gtest.h"
 
