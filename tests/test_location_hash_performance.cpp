@@ -141,6 +141,8 @@ TEST(test_location_hash_performance, StressTest)
 	double min_collision_detection_time = std::numeric_limits<double>::max();
 	double max_collision_detection_time = std::numeric_limits<double>::min();
 
+	int total_collision_checks = 0;
+
 	for (int frame = 0; frame < num_frames; ++frame) {
 		auto frame_start_time = std::chrono::high_resolution_clock::now();
 
@@ -179,6 +181,7 @@ TEST(test_location_hash_performance, StressTest)
 
 		start_time = std::chrono::high_resolution_clock::now();
 		for (auto & sphere : spheres) {
+			++total_collision_checks;
 			auto results = location_hash.query(sphere.x, sphere.y, sphere.z, sphere.radius);
 			for (const auto & result : results) {
 				if (result.second != &sphere) {
@@ -241,4 +244,6 @@ TEST(test_location_hash_performance, StressTest)
 	          << std::endl;
 	std::cout << "Maximum collision detection time per frame: " << max_collision_detection_time << " milliseconds"
 	          << std::endl;
+
+	std::cout << "Total collision checks: " << total_collision_checks << std::endl;
 }
