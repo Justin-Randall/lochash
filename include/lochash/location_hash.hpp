@@ -14,14 +14,16 @@ namespace lochash
 	 *
 	 * @tparam Precision The precision value for quantization. Must be a power of two.
 	 * @tparam CoordinateType The type of the coordinates. Must be an arithmetic type.
+	 * @tparam Dimensions The number of dimensions for the coordinates.
 	 * @tparam ObjectType The type of the associated object. Defaults to void if no associated object is stored.
 	 */
-	template <std::size_t Precision, typename CoordinateType, typename ObjectType = void>
+	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions, typename ObjectType = void>
 	class LocationHash
 	{
 	  public:
-		using CoordinateVector = std::vector<CoordinateType>;
-		using BucketContent    = std::vector<std::pair<CoordinateVector, ObjectType *>>;
+		static constexpr size_t dimension_count = Dimensions;
+		using CoordinateVector                  = std::vector<CoordinateType>;
+		using BucketContent                     = std::vector<std::pair<CoordinateVector, ObjectType *>>;
 
 		/**
 		 * Adds coordinates and optionally an associated object pointer to the appropriate bucket.
@@ -32,7 +34,8 @@ namespace lochash
 		template <typename... Args, typename = std::enable_if_t<!std::is_void<ObjectType>::value>>
 		void add(ObjectType * object, const Args &... coordinates)
 		{
-			static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
+			static_assert(sizeof...(Args) == dimension_count,
+			              "The number of coordinates must match the dimension count.");
 			static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
@@ -44,7 +47,8 @@ namespace lochash
 		template <typename... Args, typename = std::enable_if_t<std::is_void<ObjectType>::value>>
 		void add(const Args &... coordinates)
 		{
-			static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
+			static_assert(sizeof...(Args) == dimension_count,
+			              "The number of coordinates must match the dimension count.");
 			static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
@@ -62,7 +66,8 @@ namespace lochash
 		template <typename... Args>
 		const BucketContent & query(const Args &... coordinates) const
 		{
-			static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
+			static_assert(sizeof...(Args) == dimension_count,
+			              "The number of coordinates must match the dimension count.");
 			static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
@@ -85,7 +90,8 @@ namespace lochash
 		template <typename... Args, typename = std::enable_if_t<std::is_void<ObjectType>::value>>
 		bool remove(const Args &... coordinates)
 		{
-			static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
+			static_assert(sizeof...(Args) == dimension_count,
+			              "The number of coordinates must match the dimension count.");
 			static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
@@ -127,7 +133,8 @@ namespace lochash
 		template <typename... Args, typename = std::enable_if_t<!std::is_void<ObjectType>::value>>
 		bool remove(ObjectType * object, const Args &... coordinates)
 		{
-			static_assert(sizeof...(Args) > 0, "At least one coordinate must be provided.");
+			static_assert(sizeof...(Args) == dimension_count,
+			              "The number of coordinates must match the dimension count.");
 			static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
@@ -159,8 +166,10 @@ namespace lochash
 		template <typename... OldArgs, typename... NewArgs>
 		bool move(const std::tuple<OldArgs...> & old_coordinates, const std::tuple<NewArgs...> & new_coordinates)
 		{
-			static_assert(sizeof...(OldArgs) > 0, "At least one old coordinate must be provided.");
-			static_assert(sizeof...(NewArgs) > 0, "At least one new coordinate must be provided.");
+			static_assert(sizeof...(OldArgs) == dimension_count,
+			              "The number of old coordinates must match the dimension count.");
+			static_assert(sizeof...(NewArgs) == dimension_count,
+			              "The number of new coordinates must match the dimension count.");
 			static_assert(are_all_same<CoordinateType, OldArgs...>::value,
 			              "All old coordinates must be of the same type.");
 			static_assert(are_all_same<CoordinateType, NewArgs...>::value,
@@ -176,8 +185,10 @@ namespace lochash
 		bool move(ObjectType * object, const std::tuple<OldArgs...> & old_coordinates,
 		          const std::tuple<NewArgs...> & new_coordinates)
 		{
-			static_assert(sizeof...(OldArgs) > 0, "At least one old coordinate must be provided.");
-			static_assert(sizeof...(NewArgs) > 0, "At least one new coordinate must be provided.");
+			static_assert(sizeof...(OldArgs) == dimension_count,
+			              "The number of old coordinates must match the dimension count.");
+			static_assert(sizeof...(NewArgs) == dimension_count,
+			              "The number of new coordinates must match the dimension count.");
 			static_assert(are_all_same<CoordinateType, OldArgs...>::value,
 			              "All old coordinates must be of the same type.");
 			static_assert(are_all_same<CoordinateType, NewArgs...>::value,

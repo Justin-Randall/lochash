@@ -29,9 +29,9 @@ TEST(LocationHashRecursion, QueryBoundingBox3D)
 	TestObject player2(2, "Player2", 0, 0, 0, 10.0, 10.0, 10.0);
 	TestObject player3(3, "Player3", 1, 0, 0, 20.0, 20.0, 20.0);
 
-	LocationHash<player_precision, float, TestObject>                                           map1Hash;
-	LocationHash<player_precision, float, TestObject>                                           map2Hash;
-	LocationHash<map_of_maps_precision, int, LocationHash<player_precision, float, TestObject>> mapOfMapsHash;
+	LocationHash<player_precision, float, 3, TestObject>                                              map1Hash;
+	LocationHash<player_precision, float, 3, TestObject>                                              map2Hash;
+	LocationHash<map_of_maps_precision, int, 3, LocationHash<player_precision, float, 3, TestObject>> mapOfMapsHash;
 
 	map1Hash.add(&player1, player1.x, player1.y, player1.z);
 	map1Hash.add(&player2, player2.x, player2.y, player2.z);

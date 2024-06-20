@@ -28,11 +28,12 @@ namespace lochash
 	} // namespace detail
 
 	// Function to query objects within a bounding box
-	template <std::size_t Precision, typename CoordinateType, typename ObjectType, typename... Args>
+	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions, typename ObjectType,
+	          typename... Args>
 	std::vector<ObjectType *>
-	query_bounding_box(const LocationHash<Precision, CoordinateType, ObjectType> & locationHash,
-	                   const std::tuple<CoordinateType, Args...> &                 lower_bounds,
-	                   const std::tuple<CoordinateType, Args...> &                 upper_bounds)
+	query_bounding_box(const LocationHash<Precision, CoordinateType, Dimensions, ObjectType> & locationHash,
+	                   const std::tuple<CoordinateType, Args...> &                             lower_bounds,
+	                   const std::tuple<CoordinateType, Args...> &                             upper_bounds)
 	{
 		std::vector<ObjectType *> result;
 

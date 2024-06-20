@@ -15,7 +15,7 @@ TEST(LocationHelpersTest, QueryBoundingBox2D)
 	constexpr std::size_t precision = 16;
 
 	// Create a LocationHash for 2D coordinates with associated TestObject
-	LocationHash<precision, float, TestObject> locationHash;
+	LocationHash<precision, float, 2, TestObject> locationHash;
 
 	// Create some test objects
 	TestObject obj1{1, "Object1"};
@@ -43,7 +43,7 @@ TEST(LocationHelpersTest, QueryBoundingBox3D)
 	constexpr std::size_t precision = 16;
 
 	// Create a LocationHash for 3D coordinates with associated TestObject
-	LocationHash<precision, double, TestObject> locationHash;
+	LocationHash<precision, double, 3, TestObject> locationHash;
 
 	// Create some test objects
 	TestObject obj1{1, "Object1"};
@@ -71,7 +71,7 @@ TEST(LocationHelpersTest, QueryBoundingBox4D)
 	constexpr std::size_t precision = 16;
 
 	// Create a LocationHash for 4D coordinates with associated TestObject
-	LocationHash<precision, float, TestObject> locationHash;
+	LocationHash<precision, float, 4, TestObject> locationHash;
 
 	// Create some test objects
 	TestObject obj1{1, "Object1"};

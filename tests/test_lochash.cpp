@@ -18,7 +18,7 @@ TEST(LocationHashTest, Move2DCoordinates)
 	constexpr std::size_t precision = 16;
 
 	// Create a LocationHash for 2D coordinates with no associated object
-	LocationHash<precision, float> locationHash;
+	LocationHash<precision, float, 2> locationHash;
 
 	// Add some 2D coordinates
 	locationHash.add(1.0f, 2.0f);
@@ -33,7 +33,7 @@ TEST(LocationHashTest, Move2DCoordinates)
 
 	const auto & new_bucket = locationHash.query(10.0f, 20.0f);
 	ASSERT_EQ(new_bucket.size(), 1);
-	EXPECT_EQ(new_bucket[0].first, (LocationHash<precision, float>::CoordinateVector{10.0f, 20.0f}));
+	EXPECT_EQ(new_bucket[0].first, (LocationHash<precision, float, 2>::CoordinateVector{10.0f, 20.0f}));
 
 	// Move a non-existing coordinate
 	EXPECT_FALSE(locationHash.move(std::make_tuple(100.0f, 200.0f), std::make_tuple(150.0f, 250.0f)));
@@ -44,7 +44,7 @@ TEST(LocationHashTest, Move3DCoordinatesWithObject)
 	constexpr std::size_t precision = 16;
 
 	// Create a LocationHash for 3D coordinates with associated TestObject
-	LocationHash<precision, double, TestObject> locationHash;
+	LocationHash<precision, double, 3, TestObject> locationHash;
 
 	// Create some test objects
 	TestObject obj1{1, "Object1"};
@@ -75,7 +75,7 @@ TEST(LocationHashTest, Move4DCoordinatesWithEpsilon)
 	constexpr std::size_t precision = 16;
 
 	// Create a LocationHash for 4D coordinates with no associated object
-	LocationHash<precision, float> locationHash;
+	LocationHash<precision, float, 4> locationHash;
 
 	// Add some 4D coordinates
 	locationHash.add(1.0f, 2.0f, 3.0f, 4.0f);
@@ -91,7 +91,7 @@ TEST(LocationHashTest, Move4DCoordinatesWithEpsilon)
 
 	const auto & new_bucket = locationHash.query(10.0f, 20.0f, 30.0f, 40.0f);
 	ASSERT_EQ(new_bucket.size(), 1);
-	EXPECT_EQ(new_bucket[0].first, (LocationHash<precision, float>::CoordinateVector{10.0f, 20.0f, 30.0f, 40.0f}));
+	EXPECT_EQ(new_bucket[0].first, (LocationHash<precision, float, 4>::CoordinateVector{10.0f, 20.0f, 30.0f, 40.0f}));
 
 	// Move a non-existing coordinate
 	EXPECT_FALSE(locationHash.move(std::make_tuple(100.0f, 200.0f, 300.0f, 400.0f),
@@ -104,7 +104,7 @@ TEST(LocationHashTest, AddQueryRemove2DCoordinates)
 	constexpr std::size_t precision = 16;
 
 	// Create a LocationHash for 2D coordinates with no associated object
-	LocationHash<precision, float> locationHash;
+	LocationHash<precision, float, 2> locationHash;
 
 	// Add some 2D coordinates
 	locationHash.add(1.0f, 2.0f);
@@ -113,11 +113,11 @@ TEST(LocationHashTest, AddQueryRemove2DCoordinates)
 	// Query and ensure coordinates are present
 	const auto & bucket1 = locationHash.query(1.0f, 2.0f);
 	ASSERT_EQ(bucket1.size(), 1);
-	EXPECT_EQ(bucket1[0].first, (LocationHash<precision, float>::CoordinateVector{1.0f, 2.0f}));
+	EXPECT_EQ(bucket1[0].first, (LocationHash<precision, float, 2>::CoordinateVector{1.0f, 2.0f}));
 
 	const auto & bucket2 = locationHash.query(16.0f, 32.0f);
 	ASSERT_EQ(bucket2.size(), 1);
-	EXPECT_EQ(bucket2[0].first, (LocationHash<precision, float>::CoordinateVector{16.0f, 32.0f}));
+	EXPECT_EQ(bucket2[0].first, (LocationHash<precision, float, 2>::CoordinateVector{16.0f, 32.0f}));
 
 	// Remove and ensure coordinates are removed
 	EXPECT_TRUE(locationHash.remove(1.0f, 2.0f));
@@ -133,7 +133,7 @@ TEST(LocationHashTest, AddQueryRemove3DCoordinatesWithObject)
 	constexpr std::size_t precision = 16;
 
 	// Create a LocationHash for 3D coordinates with associated TestObject
-	LocationHash<precision, double, TestObject> locationHash;
+	LocationHash<precision, double, 3, TestObject> locationHash;
 
 	// Create some test objects
 	TestObject obj1{1, "Object1"};
@@ -166,7 +166,7 @@ TEST(LocationHashTest, AddQueryRemove4DCoordinatesWithEpsilon)
 	constexpr std::size_t precision = 16;
 
 	// Create a LocationHash for 4D coordinates with no associated object
-	LocationHash<precision, float> locationHash;
+	LocationHash<precision, float, 4> locationHash;
 
 	// Add some 4D coordinates
 	locationHash.add(1.0f, 2.0f, 3.0f, 4.0f);
@@ -175,11 +175,11 @@ TEST(LocationHashTest, AddQueryRemove4DCoordinatesWithEpsilon)
 	// Query and ensure coordinates are present
 	const auto & bucket1 = locationHash.query(1.0f, 2.0f, 3.0f, 4.0f);
 	ASSERT_EQ(bucket1.size(), 1);
-	EXPECT_EQ(bucket1[0].first, (LocationHash<precision, float>::CoordinateVector{1.0f, 2.0f, 3.0f, 4.0f}));
+	EXPECT_EQ(bucket1[0].first, (LocationHash<precision, float, 4>::CoordinateVector{1.0f, 2.0f, 3.0f, 4.0f}));
 
 	const auto & bucket2 = locationHash.query(16.0f, 32.0f, 48.0f, 64.0f);
 	ASSERT_EQ(bucket2.size(), 1);
-	EXPECT_EQ(bucket2[0].first, (LocationHash<precision, float>::CoordinateVector{16.0f, 32.0f, 48.0f, 64.0f}));
+	EXPECT_EQ(bucket2[0].first, (LocationHash<precision, float, 4>::CoordinateVector{16.0f, 32.0f, 48.0f, 64.0f}));
 
 	// Remove and ensure coordinates are removed
 	EXPECT_TRUE(locationHash.remove(1.0f, 2.0f, 3.0f, 4.0f));

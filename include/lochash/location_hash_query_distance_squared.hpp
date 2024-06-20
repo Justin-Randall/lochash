@@ -36,9 +36,10 @@ namespace lochash
 	} // namespace detail
 
 	// Function to query objects within a certain distance from a point
-	template <std::size_t Precision, typename CoordinateType, typename ObjectType, typename... Args>
+	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions, typename ObjectType,
+	          typename... Args>
 	std::vector<ObjectType *>
-	query_within_distance(const LocationHash<Precision, CoordinateType, ObjectType> & locationHash,
+	query_within_distance(const LocationHash<Precision, CoordinateType, Dimensions, ObjectType> & locationHash,
 	                      const std::tuple<CoordinateType, Args...> & center, CoordinateType radius)
 	{
 		std::vector<ObjectType *> result;
