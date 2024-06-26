@@ -1,5 +1,6 @@
 #include "lochash/location_hash_query_bounding_box.hpp"
 #include "lochash/lochash.hpp"
+#include "test_helpers.hpp"
 #include "gtest/gtest.h"
 
 using namespace lochash;
@@ -91,4 +92,42 @@ TEST(LocationHelpersTest, QueryBoundingBox4D)
 	EXPECT_TRUE(std::find(result.begin(), result.end(), &obj1) != result.end());
 	EXPECT_FALSE(std::find(result.begin(), result.end(), &obj2) != result.end());
 	EXPECT_FALSE(std::find(result.begin(), result.end(), &obj3) != result.end());
+}
+
+TEST(LocationHelpersTest, QueryBoundingBoxComplexity)
+{
+	std::vector<std::size_t> object_counts = {10, 100, 1000, 10000};
+	std::vector<long long>   query_times;
+
+	std::srand(static_cast<unsigned int>(std::time(nullptr)));
+
+	constexpr std::size_t   max_objects = 10000;
+	std::vector<TestObject> test_objects;
+	test_objects.reserve(max_objects);
+	for (std::size_t i = 0; i < max_objects; ++i) {
+		test_objects.push_back({static_cast<int>(i), "Object" + std::to_string(i)});
+	}
+
+	constexpr std::size_t precision = 16;
+	for (auto count : object_counts) {
+		LocationHash<precision, float, 2, TestObject> locationHash;
+
+		for (int i = 0; i < count; ++i) {
+			float x = -1000.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 2000.0f));
+			float y = -1000.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 2000.0f));
+			locationHash.add(&test_objects[i], {x, y});
+		}
+
+		auto start = std::chrono::high_resolution_clock::now();
+
+		auto result = query_bounding_box(locationHash, {-50.0f, -50.0f}, {50.0f, 50.0f});
+
+		auto end      = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+		query_times.push_back(duration);
+	}
+
+	// Test the complexity against an expected threshold (e.g., O(log n))
+	auto determined_complexity = test_complexity(object_counts, query_times);
+	EXPECT_LE(determined_complexity, ComplexityThreshold::O1);
 }

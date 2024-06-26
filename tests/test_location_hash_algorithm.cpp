@@ -200,5 +200,8 @@ TEST(test_hash_algorithm, PerformanceParameterCount)
 	auto duration3 = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
 	SCOPED_TRACE("Testing performance based on parameter count. Should be about O(n)");
-	test_complexity({2, 20, 200}, {duration1, duration2, duration3}, ComplexityThreshold::ON);
+	std::vector<size_t>    counts{2, 20, 200};
+	std::vector<long long> durations{duration1, duration2, duration3};
+	auto                   determined_complexity = test_complexity(counts, durations);
+	EXPECT_LE(determined_complexity, ComplexityThreshold::ON);
 }
