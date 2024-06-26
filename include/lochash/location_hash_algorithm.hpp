@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 namespace lochash
 {
@@ -39,25 +40,6 @@ namespace lochash
 	}
 
 	/**
-	 * Recursively combines the hash of multiple values with a seed value.
-	 * This is a compile-time recursion using variadic templates.
-	 *
-	 * @tparam T The type of the first value to hash.
-	 * @tparam Args The types of the remaining values to hash.
-	 * @param seed The current seed value.
-	 * @param value The first value to hash.
-	 * @param args The remaining values to hash.
-	 * @return A combined hash value.
-	 */
-	template <typename T, typename... Args>
-	std::size_t hash_combine(std::size_t seed, const T & value, const Args &... args)
-	{
-		seed = hash_combine(seed, value);
-		// Recursively combine hashes of remaining values
-		return hash_combine(seed, args...);
-	}
-
-	/**
 	 * Quantizes a value based on the specified precision.
 	 * This function uses bitwise operations for performance, avoiding division.
 	 *
@@ -78,48 +60,95 @@ namespace lochash
 		return static_cast<std::size_t>(value) & ~(Precision - 1);
 	}
 
-	// Helper metafunction to check if all types in a parameter pack are the same
-	template <typename T, typename... Args>
-	struct are_all_same;
-
-	template <typename T>
-	struct are_all_same<T> : std::true_type {
-	};
-
-	template <typename T, typename U, typename... Args>
-	struct are_all_same<T, U, Args...> : std::false_type {
-	};
-
-	template <typename T, typename... Args>
-	struct are_all_same<T, T, Args...> : are_all_same<T, Args...> {
-	};
+	/**
+	 * Quantizes an array of coordinates based on the specified precision.
+	 *
+	 * @tparam Precision The precision value for quantization. Must be a power of two.
+	 * @tparam CoordinateType The type of the coordinates. Must be an arithmetic type.
+	 * @tparam Dimensions The number of dimensions.
+	 * @param coordinates The array of coordinates to quantize.
+	 * @return A quantized array of coordinates.
+	 */
+	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions>
+	std::array<std::size_t, Dimensions> quantize_coordinates(const std::array<CoordinateType, Dimensions> & coordinates)
+	{
+		std::array<std::size_t, Dimensions> quantized_coords;
+		for (std::size_t i = 0; i < Dimensions; ++i) {
+			quantized_coords[i] = quantize_value<CoordinateType, Precision>(coordinates[i]);
+		}
+		return quantized_coords;
+	}
 
 	/**
-	 * Generates a hash from an arbitrary number of parameters with precision.
+	 * Generates a hash from an array of values with precision.
 	 * All input parameters must be of the same type, and this is enforced at compile time.
 	 *
 	 * @tparam Precision The precision value for quantization. Must be a power of two.
-	 * @tparam T The type of the first value to hash. Must be an arithmetic type.
-	 * @tparam Args The types of the remaining values to hash. Must be the same as T.
-	 * @param value The first value to hash.
-	 * @param args The remaining values to hash.
+	 * @tparam CoordinateType The type of the values to hash. Must be an arithmetic type.
+	 * @tparam Dimensions The number of dimensions (size of the array).
+	 * @param coordinates The array of values to hash.
 	 * @return A combined hash value.
 	 */
-	template <std::size_t Precision, typename T, typename... Args>
-	std::size_t generate_hash(const T & value, const Args &... args)
+	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions>
+	std::size_t generate_hash(const std::array<CoordinateType, Dimensions> & coordinates)
 	{
-		static_assert(std::is_arithmetic<T>::value, "Only arithmetic types are supported");
-		static_assert(are_all_same<T, Args...>::value, "All arguments must be of the same type");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "Only arithmetic types are supported");
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
 
+		std::size_t seed = 0;
+
+		// Quantize the coordinates first
+		// auto        quantized_coords = quantize_coordinates<Precision, CoordinateType, Dimensions>(coordinates);
+		// for (const auto & value : quantized_coords) {
+		// 	seed = hash_combine(seed, value);
+		// }
 		// Initial seed with quantized first value
 		// Quantization ensures values are grouped into buckets defined by Precision
-		std::size_t seed = hash_combine(0, quantize_value<T, Precision>(value));
-		// Recursively combine the hash of remaining quantized values
-		// The fold expression ((seed = hash_combine(seed, quantize_value<T, Precision>(args))), ...)
-		// ensures each argument is processed in order, combining their hashes into the final seed.
-		((seed = hash_combine(seed, quantize_value<T, Precision>(args))), ...);
+		for (const auto & value : coordinates) {
+			seed = hash_combine(seed, quantize_value<CoordinateType, Precision>(value));
+		}
 		return seed;
+	}
+
+	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions>
+	std::vector<std::size_t>
+	generate_all_hash_keys_within_range(const std::array<CoordinateType, Dimensions> & min_coords,
+	                                    const std::array<CoordinateType, Dimensions> & max_coords)
+	{
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
+		std::vector<std::size_t> hash_keys;
+
+		std::array<std::size_t, Dimensions> steps;
+		for (std::size_t i = 0; i < Dimensions; ++i) {
+			steps[i] = quantize_value<CoordinateType, Precision>(max_coords[i] - min_coords[i]) / Precision + 1;
+		}
+
+		std::array<std::size_t, Dimensions> indices = {0};
+		bool                                done    = false;
+
+		while (!done) {
+			std::array<CoordinateType, Dimensions> current_coords;
+			for (std::size_t i = 0; i < Dimensions; ++i) {
+				current_coords[i] = min_coords[i] + indices[i] * Precision;
+			}
+
+			std::size_t hash_key = generate_hash<Precision>(current_coords);
+			hash_keys.push_back(hash_key);
+
+			// Increment the indices array to generate the next coordinate in the range.
+			for (std::size_t i = 0; i < Dimensions; ++i) {
+				if (++indices[i] < steps[i]) {
+					break;
+				}
+				indices[i] = 0;
+				if (i == Dimensions - 1) {
+					done = true;
+				}
+			}
+		}
+
+		return hash_keys;
 	}
 } // namespace lochash
 

@@ -22,56 +22,42 @@ namespace lochash
 	{
 	  public:
 		static constexpr size_t dimension_count = Dimensions;
-		using CoordinateVector                  = std::vector<CoordinateType>;
-		using BucketContent                     = std::vector<std::pair<CoordinateVector, ObjectType *>>;
+		using CoordinateArray                   = std::array<CoordinateType, Dimensions>;
+		using BucketContent                     = std::vector<std::pair<CoordinateArray, ObjectType *>>;
 
 		/**
 		 * Adds coordinates and optionally an associated object pointer to the appropriate bucket.
 		 *
 		 * @param object Pointer to the associated object (optional, only if ObjectType is not void).
-		 * @param coordinates Variadic coordinate inputs.
+		 * @param coordinates Array of coordinate inputs.
 		 */
-		template <typename... Args, typename = std::enable_if_t<!std::is_void<ObjectType>::value>>
-		void add(ObjectType * object, const Args &... coordinates)
+		void add(ObjectType * object, const CoordinateArray & coordinates)
 		{
-			static_assert(sizeof...(Args) == dimension_count,
-			              "The number of coordinates must match the dimension count.");
-			static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
-			CoordinateVector coord_vec = {static_cast<CoordinateType>(coordinates)...};
-			std::size_t      hash_key  = generate_hash<Precision>(coordinates...);
-			data_[hash_key].emplace_back(coord_vec, object);
+			std::size_t hash_key = generate_hash<Precision>(coordinates);
+			data_[hash_key].emplace_back(coordinates, object);
 		}
 
-		template <typename... Args, typename = std::enable_if_t<std::is_void<ObjectType>::value>>
-		void add(const Args &... coordinates)
+		void add(const CoordinateArray & coordinates)
 		{
-			static_assert(sizeof...(Args) == dimension_count,
-			              "The number of coordinates must match the dimension count.");
-			static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
-			CoordinateVector coord_vec = {static_cast<CoordinateType>(coordinates)...};
-			std::size_t      hash_key  = generate_hash<Precision>(coordinates...);
-			data_[hash_key].emplace_back(coord_vec, nullptr);
+			std::size_t hash_key = generate_hash<Precision>(coordinates);
+			data_[hash_key].emplace_back(coordinates, nullptr);
 		}
 
 		/**
 		 * Retrieves all coordinates and associated objects within a certain bucket.
 		 *
-		 * @param coordinates Variadic coordinate inputs to determine the bucket.
+		 * @param coordinates Array of coordinate inputs to determine the bucket.
 		 * @return A reference to the bucket content (vector of coordinates and associated objects).
 		 */
-		template <typename... Args>
-		const BucketContent & query(const Args &... coordinates) const
+		const BucketContent & query(const CoordinateArray & coordinates) const
 		{
-			static_assert(sizeof...(Args) == dimension_count,
-			              "The number of coordinates must match the dimension count.");
-			static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
-			std::size_t hash_key = generate_hash<Precision>(coordinates...);
+			std::size_t hash_key = generate_hash<Precision>(coordinates);
 			auto        it       = data_.find(hash_key);
 			if (it != data_.end()) {
 				return it->second;
@@ -84,41 +70,19 @@ namespace lochash
 		/**
 		 * Removes a coordinate and optionally an associated object from the appropriate bucket.
 		 *
-		 * @param coordinates Variadic coordinate inputs.
+		 * @param coordinates Array of coordinate inputs.
 		 * @return True if an item was removed, false otherwise.
 		 */
-		template <typename... Args, typename = std::enable_if_t<std::is_void<ObjectType>::value>>
-		bool remove(const Args &... coordinates)
+		bool remove(const CoordinateArray & coordinates)
 		{
-			static_assert(sizeof...(Args) == dimension_count,
-			              "The number of coordinates must match the dimension count.");
-			static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
-			std::size_t hash_key = generate_hash<Precision>(coordinates...);
+			std::size_t hash_key = generate_hash<Precision>(coordinates);
 			auto        it       = data_.find(hash_key);
 			if (it != data_.end()) {
 				auto & bucket = it->second;
 				for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
-					// Remove by coordinate comparison with epsilon for floating points
-					bool                                        match       = true;
-					std::array<CoordinateType, sizeof...(Args)> coord_array = {
-					    static_cast<CoordinateType>(coordinates)...};
-					for (std::size_t i = 0; i < coord_array.size(); ++i) {
-						if constexpr (std::is_floating_point<CoordinateType>::value) {
-							if (std::fabs(bucket_it->first[i] - coord_array[i]) >
-							    std::numeric_limits<CoordinateType>::epsilon()) {
-								match = false;
-								break;
-							}
-						} else {
-							if (bucket_it->first[i] != coord_array[i]) {
-								match = false;
-								break;
-							}
-						}
-					}
-					if (match) {
+					if (coordinates_match(bucket_it->first, coordinates)) {
 						bucket.erase(bucket_it);
 						if (bucket.empty()) {
 							data_.erase(it);
@@ -130,20 +94,15 @@ namespace lochash
 			return false;
 		}
 
-		template <typename... Args, typename = std::enable_if_t<!std::is_void<ObjectType>::value>>
-		bool remove(ObjectType * object, const Args &... coordinates)
+		bool remove(ObjectType * object, const CoordinateArray & coordinates)
 		{
-			static_assert(sizeof...(Args) == dimension_count,
-			              "The number of coordinates must match the dimension count.");
-			static_assert(are_all_same<CoordinateType, Args...>::value, "All coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
-			std::size_t hash_key = generate_hash<Precision>(coordinates...);
+			std::size_t hash_key = generate_hash<Precision>(coordinates);
 			auto        it       = data_.find(hash_key);
 			if (it != data_.end()) {
 				auto & bucket = it->second;
 				for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
-					// Remove by object pointer comparison
 					if (bucket_it->second == object) {
 						bucket.erase(bucket_it);
 						if (bucket.empty()) {
@@ -159,44 +118,30 @@ namespace lochash
 		/**
 		 * Moves a coordinate and optionally an associated object from one bucket to another.
 		 *
-		 * @param old_coordinates Variadic coordinate inputs for the current location.
-		 * @param new_coordinates Variadic coordinate inputs for the new location.
+		 * @param old_coordinates Array of coordinate inputs for the current location.
+		 * @param new_coordinates Array of coordinate inputs for the new location.
 		 * @return True if an item was moved, false otherwise.
 		 */
-		template <typename... OldArgs, typename... NewArgs>
-		bool move(const std::tuple<OldArgs...> & old_coordinates, const std::tuple<NewArgs...> & new_coordinates)
+		bool move(const CoordinateArray & old_coordinates, const CoordinateArray & new_coordinates)
 		{
-			static_assert(sizeof...(OldArgs) == dimension_count,
-			              "The number of old coordinates must match the dimension count.");
-			static_assert(sizeof...(NewArgs) == dimension_count,
-			              "The number of new coordinates must match the dimension count.");
-			static_assert(are_all_same<CoordinateType, OldArgs...>::value,
-			              "All old coordinates must be of the same type.");
-			static_assert(are_all_same<CoordinateType, NewArgs...>::value,
-			              "All new coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
-			return move_impl(std::index_sequence_for<OldArgs...>(), std::index_sequence_for<NewArgs...>(),
-			                 old_coordinates, new_coordinates);
+			if (remove(old_coordinates)) {
+				add(new_coordinates);
+				return true;
+			}
+			return false;
 		}
 
-		template <typename... OldArgs, typename... NewArgs,
-		          typename = std::enable_if_t<!std::is_void<ObjectType>::value>>
-		bool move(ObjectType * object, const std::tuple<OldArgs...> & old_coordinates,
-		          const std::tuple<NewArgs...> & new_coordinates)
+		bool move(ObjectType * object, const CoordinateArray & old_coordinates, const CoordinateArray & new_coordinates)
 		{
-			static_assert(sizeof...(OldArgs) == dimension_count,
-			              "The number of old coordinates must match the dimension count.");
-			static_assert(sizeof...(NewArgs) == dimension_count,
-			              "The number of new coordinates must match the dimension count.");
-			static_assert(are_all_same<CoordinateType, OldArgs...>::value,
-			              "All old coordinates must be of the same type.");
-			static_assert(are_all_same<CoordinateType, NewArgs...>::value,
-			              "All new coordinates must be of the same type.");
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
-			return move_impl(std::index_sequence_for<OldArgs...>(), std::index_sequence_for<NewArgs...>(), object,
-			                 old_coordinates, new_coordinates);
+			if (remove(object, old_coordinates)) {
+				add(object, new_coordinates);
+				return true;
+			}
+			return false;
 		}
 
 		/**
@@ -209,26 +154,20 @@ namespace lochash
 		void clear() { data_.clear(); }
 
 	  private:
-		template <std::size_t... OldIndices, std::size_t... NewIndices, typename... OldArgs, typename... NewArgs>
-		bool move_impl(std::index_sequence<OldIndices...>, std::index_sequence<NewIndices...>,
-		               const std::tuple<OldArgs...> & old_coordinates, const std::tuple<NewArgs...> & new_coordinates)
+		bool coordinates_match(const CoordinateArray & coords1, const CoordinateArray & coords2) const
 		{
-			if (remove(std::get<OldIndices>(old_coordinates)...)) {
-				add(std::get<NewIndices>(new_coordinates)...);
-				return true;
+			for (std::size_t i = 0; i < Dimensions; ++i) {
+				if constexpr (std::is_floating_point<CoordinateType>::value) {
+					if (std::fabs(coords1[i] - coords2[i]) > std::numeric_limits<CoordinateType>::epsilon()) {
+						return false;
+					}
+				} else {
+					if (coords1[i] != coords2[i]) {
+						return false;
+					}
+				}
 			}
-			return false;
-		}
-
-		template <std::size_t... OldIndices, std::size_t... NewIndices, typename... OldArgs, typename... NewArgs>
-		bool move_impl(std::index_sequence<OldIndices...>, std::index_sequence<NewIndices...>, ObjectType * object,
-		               const std::tuple<OldArgs...> & old_coordinates, const std::tuple<NewArgs...> & new_coordinates)
-		{
-			if (remove(object, std::get<OldIndices>(old_coordinates)...)) {
-				add(object, std::get<NewIndices>(new_coordinates)...);
-				return true;
-			}
-			return false;
+			return true;
 		}
 
 		std::unordered_map<std::size_t, BucketContent> data_;

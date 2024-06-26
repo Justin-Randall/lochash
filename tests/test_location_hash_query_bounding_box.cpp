@@ -23,12 +23,12 @@ TEST(LocationHelpersTest, QueryBoundingBox2D)
 	TestObject obj3{3, "Object3"};
 
 	// Add coordinates with associated objects
-	locationHash.add(&obj1, 1.0f, 2.0f);
-	locationHash.add(&obj2, 16.0f, 32.0f);
-	locationHash.add(&obj3, 45.0f, 35.0f);
+	locationHash.add(&obj1, {1.0f, 2.0f});
+	locationHash.add(&obj2, {16.0f, 32.0f});
+	locationHash.add(&obj3, {45.0f, 35.0f});
 
 	// Query objects within a bounding box
-	auto result = query_bounding_box(locationHash, std::make_tuple(0.0f, 0.0f), std::make_tuple(30.0f, 40.0f));
+	auto result = query_bounding_box(locationHash, {0.0f, 0.0f}, {30.0f, 40.0f});
 
 	// Check the result
 	ASSERT_EQ(result.size(), 2);
@@ -51,12 +51,12 @@ TEST(LocationHelpersTest, QueryBoundingBox3D)
 	TestObject obj3{3, "Object3"};
 
 	// Add coordinates with associated objects
-	locationHash.add(&obj1, 1.0, 2.0, 3.0);
-	locationHash.add(&obj2, 16.0, 32.0, 48.0);
-	locationHash.add(&obj3, 25.0, 35.0, 55.0);
+	locationHash.add(&obj1, {1.0, 2.0, 3.0});
+	locationHash.add(&obj2, {16.0, 32.0, 48.0});
+	locationHash.add(&obj3, {25.0, 35.0, 55.0});
 
 	// Query objects within a bounding box
-	auto result = query_bounding_box(locationHash, std::make_tuple(0.0, 0.0, 0.0), std::make_tuple(30.0, 40.0, 50.0));
+	auto result = query_bounding_box(locationHash, {0.0, 0.0, 0.0}, {30.0, 40.0, 50.0});
 
 	// Check the result
 	ASSERT_EQ(result.size(), 2);
@@ -79,13 +79,12 @@ TEST(LocationHelpersTest, QueryBoundingBox4D)
 	TestObject obj3{3, "Object3"};
 
 	// Add coordinates with associated objects
-	locationHash.add(&obj1, 1.0f, 2.0f, 3.0f, 4.0f);
-	locationHash.add(&obj2, 16.0f, 32.0f, 48.0f, 64.0f);
-	locationHash.add(&obj3, 25.0f, 35.0f, 45.0f, 155.0f);
+	locationHash.add(&obj1, {1.0f, 2.0f, 3.0f, 4.0f});
+	locationHash.add(&obj2, {16.0f, 32.0f, 48.0f, 64.0f});
+	locationHash.add(&obj3, {25.0f, 35.0f, 45.0f, 155.0f});
 
 	// Query objects within a bounding box
-	auto result = query_bounding_box(locationHash, std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f),
-	                                 std::make_tuple(30.0f, 40.0f, 50.0f, 60.0f));
+	auto result = query_bounding_box(locationHash, {0.0f, 0.0f, 0.0f, 0.0f}, {30.0f, 40.0f, 50.0f, 60.0f});
 
 	// Check the result
 	ASSERT_EQ(result.size(), 1);

@@ -1,5 +1,4 @@
 #include "test_helpers.hpp"
-// #include <chrono>
 
 void test_complexity(std::initializer_list<std::size_t> counts, std::initializer_list<long long> timings,
                      ComplexityThreshold threshold)

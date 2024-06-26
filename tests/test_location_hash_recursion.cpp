@@ -33,15 +33,15 @@ TEST(LocationHashRecursion, QueryBoundingBox3D)
 	LocationHash<player_precision, float, 3, TestObject>                                              map2Hash;
 	LocationHash<map_of_maps_precision, int, 3, LocationHash<player_precision, float, 3, TestObject>> mapOfMapsHash;
 
-	map1Hash.add(&player1, player1.x, player1.y, player1.z);
-	map1Hash.add(&player2, player2.x, player2.y, player2.z);
-	map2Hash.add(&player3, player3.x, player3.y, player3.z);
+	map1Hash.add(&player1, {player1.x, player1.y, player1.z});
+	map1Hash.add(&player2, {player2.x, player2.y, player2.z});
+	map2Hash.add(&player3, {player3.x, player3.y, player3.z});
 
-	mapOfMapsHash.add(&map1Hash, player1.map_x, player1.map_y, player1.map_z);
-	mapOfMapsHash.add(&map2Hash, player3.map_x, player3.map_y, player3.map_z);
+	mapOfMapsHash.add(&map1Hash, {player1.map_x, player1.map_y, player1.map_z});
+	mapOfMapsHash.add(&map2Hash, {player3.map_x, player3.map_y, player3.map_z});
 
 	// ensure the mapOfMapsHash contain the map hashes
-	const auto & mapOfMapBuckets1 = mapOfMapsHash.query(player1.map_x, player1.map_y, player1.map_z);
+	const auto & mapOfMapBuckets1 = mapOfMapsHash.query({player1.map_x, player1.map_y, player1.map_z});
 	// both maps should be in the same bucket
 	ASSERT_EQ(mapOfMapBuckets1.size(), 2);
 
@@ -52,7 +52,7 @@ TEST(LocationHashRecursion, QueryBoundingBox3D)
 	EXPECT_EQ(r2, &map2Hash);
 
 	// ensure the objects exist in the r1 and r2 buckets respectively, and in ones they should not exist in.
-	const auto & map1Bucket = r1->query(player1.x, player1.y, player1.z);
+	const auto & map1Bucket = r1->query({player1.x, player1.y, player1.z});
 	// player1 and player2 should be in map1Bucket
 	ASSERT_EQ(map1Bucket.size(), 2);
 	const auto & pr1 = map1Bucket[0].second;
@@ -61,7 +61,7 @@ TEST(LocationHashRecursion, QueryBoundingBox3D)
 	EXPECT_EQ(pr2, &player2);
 
 	// repeat for player3 in r2
-	const auto & map2Bucket = r2->query(player3.x, player3.y, player3.z);
+	const auto & map2Bucket = r2->query({player3.x, player3.y, player3.z});
 	// player3 should be in map2Bucket
 	ASSERT_EQ(map2Bucket.size(), 1);
 	const auto & pr3 = map2Bucket[0].second;

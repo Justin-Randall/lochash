@@ -23,12 +23,12 @@ TEST(LocationHashQueryTest, QueryWithinDistance2D)
 	TestObject obj3{3, "Object3"};
 
 	// Add coordinates with associated objects
-	locationHash.add(&obj1, 1.0f, 2.0f);
-	locationHash.add(&obj2, 16.0f, 32.0f);
-	locationHash.add(&obj3, 45.0f, 35.0f);
+	locationHash.add(&obj1, {4.0f, 3.0f});
+	locationHash.add(&obj2, {16.0f, 32.0f});
+	locationHash.add(&obj3, {45.0f, 35.0f});
 
 	// Query objects within a distance of 5 units from (0,0)
-	auto result = query_within_distance(locationHash, std::make_tuple(0.0f, 0.0f), 5.0f);
+	auto result = query_within_distance(locationHash, {5.5f, 5.5f}, 5.0f);
 
 	// Check the result
 	ASSERT_EQ(result.size(), 1);
@@ -49,12 +49,12 @@ TEST(LocationHashQueryTest, QueryWithinDistance3D)
 	TestObject obj3{3, "Object3"};
 
 	// Add coordinates with associated objects
-	locationHash.add(&obj1, 1.0, 2.0, 3.0);
-	locationHash.add(&obj2, 16.0, 32.0, 48.0);
-	locationHash.add(&obj3, 25.0, 35.0, 55.0);
+	locationHash.add(&obj1, {1.0, 2.0, 3.0});
+	locationHash.add(&obj2, {16.0, 32.0, 48.0});
+	locationHash.add(&obj3, {25.0, 35.0, 55.0});
 
 	// Query objects within a distance of 10 units from (0,0,0)
-	auto result = query_within_distance(locationHash, std::make_tuple(0.0, 0.0, 0.0), 10.0);
+	auto result = query_within_distance(locationHash, {0.0, 0.0, 0.0}, 10.0);
 
 	// Check the result
 	ASSERT_EQ(result.size(), 1);
