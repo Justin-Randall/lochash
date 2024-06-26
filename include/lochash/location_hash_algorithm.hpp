@@ -2,7 +2,11 @@
 #define _INCLUDED_location_hash_algorithm_hpp
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
 #include <limits>
+#include <type_traits>
 #include <vector>
 
 namespace lochash
@@ -52,6 +56,8 @@ namespace lochash
 	constexpr std::size_t quantize_value(T value)
 	{
 		static_assert(std::is_arithmetic<T>::value, "Only arithmetic types are supported");
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
+
 		// Using bitwise AND with ~(Precision - 1) to quantize the value
 		// This is more performant than using division or modulo operations because
 		// bitwise operations are generally faster and have lower latency in modern CPUs.
@@ -72,6 +78,9 @@ namespace lochash
 	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions>
 	std::array<std::size_t, Dimensions> quantize_coordinates(const std::array<CoordinateType, Dimensions> & coordinates)
 	{
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type");
+
 		std::array<std::size_t, Dimensions> quantized_coords;
 		for (std::size_t i = 0; i < Dimensions; ++i) {
 			quantized_coords[i] = quantize_value<CoordinateType, Precision>(coordinates[i]);
@@ -110,18 +119,53 @@ namespace lochash
 		return seed;
 	}
 
+	/**
+	 * Calculates the shift value for the precision.
+	 * This function is used to determine the number of bits to shift for quantization.
+	 *
+	 * It is constexpr correct and is evaluated at compile time.
+	 *
+	 * @tparam Precision The precision value. Must be a power of two.
+	 * @return The shift value for the precision.
+	 */
+	template <std::size_t Precision>
+	constexpr std::size_t calculate_precision_shift()
+	{
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
+		std::size_t shift = 0;
+		std::size_t value = Precision;
+		while (value > 1) {
+			value >>= 1;
+			++shift;
+		}
+		return shift;
+	}
+
+	/**
+	 * Generates all hash keys within a range defined by min and max coordinates.
+	 *
+	 * @tparam Precision The precision value for quantization. Must be a power of two.
+	 * @tparam CoordinateType The type of the coordinates. Must be an arithmetic type.
+	 * @tparam Dimensions The number of dimensions.
+	 * @param min_coords The minimum coordinates for the range.
+	 * @param max_coords The maximum coordinates for the range.
+	 * @return A vector of hash keys for all coordinates within the range.
+	 */
 	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions>
 	std::vector<std::size_t>
 	generate_all_hash_keys_within_range(const std::array<CoordinateType, Dimensions> & min_coords,
 	                                    const std::array<CoordinateType, Dimensions> & max_coords)
 	{
 		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
 
-		std::vector<std::size_t> hash_keys;
-
+		std::vector<std::size_t>            hash_keys;
 		std::array<std::size_t, Dimensions> steps;
+		constexpr std::size_t               precision_shift = calculate_precision_shift<Precision>();
+
 		for (std::size_t i = 0; i < Dimensions; ++i) {
-			steps[i] = quantize_value<CoordinateType, Precision>(max_coords[i] - min_coords[i]) / Precision + 1;
+			steps[i] =
+			    (quantize_value<CoordinateType, Precision>(max_coords[i] - min_coords[i]) >> precision_shift) + 1;
 		}
 
 		std::array<std::size_t, Dimensions> indices = {0};
@@ -130,7 +174,7 @@ namespace lochash
 		while (!done) {
 			std::array<CoordinateType, Dimensions> current_coords;
 			for (std::size_t i = 0; i < Dimensions; ++i) {
-				current_coords[i] = min_coords[i] + indices[i] * Precision;
+				current_coords[i] = min_coords[i] + (indices[i] << precision_shift);
 			}
 
 			std::size_t hash_key = generate_hash<Precision>(current_coords);
@@ -150,6 +194,7 @@ namespace lochash
 
 		return hash_keys;
 	}
+
 } // namespace lochash
 
 #endif //_INCLUDED_location_hash_algorithm_hpp

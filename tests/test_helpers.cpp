@@ -11,18 +11,24 @@ ComplexityThreshold test_complexity(const std::vector<std::size_t> & counts, con
 	}
 
 	ComplexityThreshold determined_threshold = ComplexityThreshold::O1;
+	const double        epsilon              = 1e-9;
 
 	while (std::next(it_counts) != counts.end() && std::next(it_timings) != timings.end()) {
-		double n_ratio    = static_cast<double>(*std::next(it_counts)) / *it_counts;
-		double time_ratio = static_cast<double>(*std::next(it_timings)) / *it_timings;
+		const double n_ratio    = static_cast<double>(*std::next(it_counts)) / *it_counts;
+		double       time_ratio = static_cast<double>(*std::next(it_timings)) / *it_timings;
 
-		double expected_ologn_ratio  = std::log2(n_ratio);
-		double expected_on_ratio     = n_ratio;
-		double expected_onlogn_ratio = n_ratio * std::log2(n_ratio);
-		double expected_on2_ratio    = n_ratio * n_ratio;
-		double expected_on3_ratio    = n_ratio * n_ratio * n_ratio;
-		double expected_o2n_ratio    = std::pow(2, n_ratio);
-		double expected_ofact_ratio  = std::tgamma(n_ratio + 1);
+		// Check for very small timing values to avoid division by zero or infinite ratios
+		if (*it_timings < epsilon || *std::next(it_timings) < epsilon) {
+			time_ratio = epsilon; // Set a minimum ratio to avoid zero or infinite issues
+		}
+
+		const double expected_ologn_ratio  = std::log2(n_ratio);
+		const double expected_on_ratio     = n_ratio;
+		const double expected_onlogn_ratio = n_ratio * std::log2(n_ratio);
+		const double expected_on2_ratio    = n_ratio * n_ratio;
+		const double expected_on3_ratio    = n_ratio * n_ratio * n_ratio;
+		const double expected_o2n_ratio    = std::pow(2, n_ratio);
+		const double expected_ofact_ratio  = std::tgamma(n_ratio + 1);
 
 		if (time_ratio < expected_ologn_ratio) {
 			determined_threshold = ComplexityThreshold::O1;

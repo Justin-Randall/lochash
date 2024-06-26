@@ -13,6 +13,7 @@ namespace lochash
 		template <typename CoordinateType>
 		CoordinateType squared_difference(CoordinateType a, CoordinateType b)
 		{
+			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 			return (a - b) * (a - b);
 		}
 
@@ -20,6 +21,7 @@ namespace lochash
 		CoordinateType calculate_distance_squared(const std::array<CoordinateType, Dimensions> & point1,
 		                                          const std::array<CoordinateType, Dimensions> & point2)
 		{
+			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 			CoordinateType distance_squared = 0;
 			for (std::size_t i = 0; i < Dimensions; ++i) {
 				distance_squared += squared_difference(point1[i], point2[i]);
@@ -42,6 +44,9 @@ namespace lochash
 	std::vector<std::size_t>
 	generate_all_hash_keys_within_distance(const std::array<CoordinateType, Dimensions> & center, CoordinateType radius)
 	{
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
 		std::array<CoordinateType, Dimensions> lower_bounds;
 		std::array<CoordinateType, Dimensions> upper_bounds;
 
@@ -70,15 +75,19 @@ namespace lochash
 	query_within_distance(const LocationHash<Precision, CoordinateType, Dimensions, ObjectType> & locationHash,
 	                      const std::array<CoordinateType, Dimensions> & center, CoordinateType radius)
 	{
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
 		std::vector<ObjectType *> result;
 		CoordinateType            radius_squared = radius * radius;
 
 		// Generate all hash keys within the specified distance
-		auto hash_keys = generate_all_hash_keys_within_distance<Precision, CoordinateType, Dimensions>(center, radius);
+		const auto hash_keys =
+		    generate_all_hash_keys_within_distance<Precision, CoordinateType, Dimensions>(center, radius);
 
 		const auto & locationHashData = locationHash.get_data();
 		for (const auto & hash_key : hash_keys) {
-			auto it = locationHashData.find(hash_key);
+			const auto it = locationHashData.find(hash_key);
 			if (it != locationHashData.end()) {
 				for (const auto & [coordinates, object] : it->second) {
 					if (detail::calculate_distance_squared<CoordinateType, Dimensions>(coordinates, center) <=

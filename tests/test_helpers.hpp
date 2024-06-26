@@ -20,6 +20,12 @@ enum class ComplexityThreshold {
  * Test the complexity of an algorithm by comparing the timings of different data points. Recommend using std::chrono or
  * other high-precision timers.
  *
+ * The threshold returned is the highest complexity threshold that the algorithm fits within. For example, if the
+ * algorithm fits within O(n) and O(n log n), the threshold will be O(n).
+ *
+ * OFACT is the slowest complexity threshold and means the algorithm is at least as bad as traveling salesman brute
+ * force.
+ *
  * @param counts The number of elements for each data point.
  * @param timings The timings for each data point.
  * @return The determined complexity threshold.

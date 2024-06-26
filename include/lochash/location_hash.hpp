@@ -20,6 +20,9 @@ namespace lochash
 	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions, typename ObjectType = void>
 	class LocationHash
 	{
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
 	  public:
 		static constexpr size_t dimension_count = Dimensions;
 		using CoordinateArray                   = std::array<CoordinateType, Dimensions>;
@@ -33,16 +36,17 @@ namespace lochash
 		 */
 		void add(ObjectType * object, const CoordinateArray & coordinates)
 		{
-			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
-
 			std::size_t hash_key = generate_hash<Precision>(coordinates);
 			data_[hash_key].emplace_back(coordinates, object);
 		}
 
+		/**
+		 * Adds coordinates to the appropriate bucket.
+		 *
+		 * @param coordinates Array of coordinate inputs.
+		 */
 		void add(const CoordinateArray & coordinates)
 		{
-			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
-
 			std::size_t hash_key = generate_hash<Precision>(coordinates);
 			data_[hash_key].emplace_back(coordinates, nullptr);
 		}
@@ -55,10 +59,8 @@ namespace lochash
 		 */
 		const BucketContent & query(const CoordinateArray & coordinates) const
 		{
-			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
-
 			std::size_t hash_key = generate_hash<Precision>(coordinates);
-			auto        it       = data_.find(hash_key);
+			const auto  it       = data_.find(hash_key);
 			if (it != data_.end()) {
 				return it->second;
 			} else {
@@ -75,14 +77,13 @@ namespace lochash
 		 */
 		bool remove(const CoordinateArray & coordinates)
 		{
-			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
-
 			std::size_t hash_key = generate_hash<Precision>(coordinates);
-			auto        it       = data_.find(hash_key);
+			const auto  it       = data_.find(hash_key);
 			if (it != data_.end()) {
 				auto & bucket = it->second;
 				for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
 					if (coordinates_match(bucket_it->first, coordinates)) {
+						// safe to erase in the loop, going to return immediately
 						bucket.erase(bucket_it);
 						if (bucket.empty()) {
 							data_.erase(it);
@@ -94,12 +95,17 @@ namespace lochash
 			return false;
 		}
 
+		/**
+		 * Removes a coordinate and optionally an associated object from the appropriate bucket.
+		 *
+		 * @param object Pointer to the associated object.
+		 * @param coordinates Array of coordinate inputs.
+		 * @return True if an item was removed, false otherwise.
+		 */
 		bool remove(ObjectType * object, const CoordinateArray & coordinates)
 		{
-			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
-
 			std::size_t hash_key = generate_hash<Precision>(coordinates);
-			auto        it       = data_.find(hash_key);
+			const auto  it       = data_.find(hash_key);
 			if (it != data_.end()) {
 				auto & bucket = it->second;
 				for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
@@ -124,8 +130,6 @@ namespace lochash
 		 */
 		bool move(const CoordinateArray & old_coordinates, const CoordinateArray & new_coordinates)
 		{
-			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
-
 			if (remove(old_coordinates)) {
 				add(new_coordinates);
 				return true;
@@ -133,10 +137,17 @@ namespace lochash
 			return false;
 		}
 
+		/**
+		 * @brief Moves a coordinate and optionally an associated object from one bucket to another.
+		 *
+		 * @param object
+		 * @param old_coordinates
+		 * @param new_coordinates
+		 * @return true
+		 * @return false
+		 */
 		bool move(ObjectType * object, const CoordinateArray & old_coordinates, const CoordinateArray & new_coordinates)
 		{
-			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
-
 			if (remove(object, old_coordinates)) {
 				add(object, new_coordinates);
 				return true;
@@ -151,6 +162,9 @@ namespace lochash
 		 */
 		const std::unordered_map<std::size_t, BucketContent> & get_data() const { return data_; }
 
+		/**
+		 * Clears all data from the LocationHash.
+		 */
 		void clear() { data_.clear(); }
 
 	  private:

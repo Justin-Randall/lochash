@@ -14,6 +14,8 @@ namespace lochash
 		template <typename CoordinateType>
 		bool within_bounds(CoordinateType coordinate, CoordinateType lower_bound, CoordinateType upper_bound)
 		{
+			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
 			return (lower_bound <= coordinate && coordinate <= upper_bound);
 		}
 
@@ -23,6 +25,8 @@ namespace lochash
 		                   const std::array<CoordinateType, Dimensions> & lower_bounds,
 		                   const std::array<CoordinateType, Dimensions> & upper_bounds)
 		{
+			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
 			for (std::size_t i = 0; i < Dimensions; ++i) {
 				if (!within_bounds(coordinates[i], lower_bounds[i], upper_bounds[i])) {
 					return false;
@@ -50,6 +54,9 @@ namespace lochash
 	                   const std::array<CoordinateType, Dimensions> &                          lower_bounds,
 	                   const std::array<CoordinateType, Dimensions> &                          upper_bounds)
 	{
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
+
 		std::vector<ObjectType *> result;
 
 		// Generate all hash keys within the specified range
@@ -58,7 +65,7 @@ namespace lochash
 
 		const auto & locationHashData = locationHash.get_data();
 		for (const auto & hash_key : hash_keys) {
-			auto it = locationHashData.find(hash_key);
+			const auto it = locationHashData.find(hash_key);
 			if (it != locationHashData.end()) {
 				for (const auto & [coordinates, object] : it->second) {
 					if (detail::within_bounds(coordinates, lower_bounds, upper_bounds)) {

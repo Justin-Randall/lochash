@@ -54,7 +54,7 @@ TEST(LocationHashQueryTest, QueryWithinDistance3D)
 	locationHash.add(&obj3, {25.0, 35.0, 55.0});
 
 	// Query objects within a distance of 10 units from (0,0,0)
-	auto result = query_within_distance(locationHash, {0.0, 0.0, 0.0}, 10.0);
+	const auto result = query_within_distance(locationHash, {0.0, 0.0, 0.0}, 10.0);
 
 	// Check the result
 	ASSERT_EQ(result.size(), 1);
