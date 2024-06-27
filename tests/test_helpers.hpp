@@ -26,6 +26,19 @@ enum class ComplexityThreshold {
  * OFACT is the slowest complexity threshold and means the algorithm is at least as bad as traveling salesman brute
  * force.
  *
+ * If 4 runs of 20, 200, 2000, and 20000 elements take the same amount of time, the complexity is O(1). If the time
+ * increases linearly with the number of elements, the complexity is O(n). If the time increases logarithmically with
+ * the number of elements, the complexity is O(log n). If the time increases linearithmically with the number of
+ * elements, the complexity is O(n log n). If the time increases quadratically with the number of elements, the
+ * complexity is O(n^2). If the time increases cubically with the number of elements, the complexity is O(n^3). If the
+ * time increases exponentially with the number of elements, the complexity is O(2^n). If the time increases factorially
+ * with the number of elements, the complexity is O(n!).
+ *
+ * The threshold should be one order of complexity higher than expected, since perfect implementations and noise with
+ * timing will almost always cause measurements to be slightly higher than expected in a perfect implementation. If the
+ * expected complexity is O(1), the threshold should be O(log n) because it means that is provably not performing with
+ * O(1) complexity.
+ *
  * @param counts The number of elements for each data point.
  * @param timings The timings for each data point.
  * @return The determined complexity threshold.

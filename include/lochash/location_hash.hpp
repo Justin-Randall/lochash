@@ -16,6 +16,8 @@ namespace lochash
 	 * @tparam CoordinateType The type of the coordinates. Must be an arithmetic type.
 	 * @tparam Dimensions The number of dimensions for the coordinates.
 	 * @tparam ObjectType The type of the associated object. Defaults to void if no associated object is stored.
+	 *
+	 * @see https://github.com/Justin-Randall/lochash/blob/main/README.md
 	 */
 	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions, typename ObjectType = void>
 	class LocationHash
