@@ -84,6 +84,12 @@
         "format": "cpp",
         "ranges": "cpp",
         "span": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "bitset": "cpp",
+        "cinttypes": "cpp",
+        "codecvt": "cpp",
+        "cstdarg": "cpp",
+        "numeric": "cpp",
+        "random": "cpp"
     }
 }

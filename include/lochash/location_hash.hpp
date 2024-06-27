@@ -19,7 +19,7 @@ namespace lochash
 	 *
 	 * @see https://github.com/Justin-Randall/lochash/blob/main/README.md
 	 */
-	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions, typename ObjectType = void>
+	template <size_t Precision, typename CoordinateType, size_t Dimensions, typename ObjectType = void>
 	class LocationHash
 	{
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
@@ -38,7 +38,7 @@ namespace lochash
 		 */
 		void add(ObjectType * object, const CoordinateArray & coordinates)
 		{
-			std::size_t hash_key = generate_hash<Precision>(coordinates);
+			size_t hash_key = generate_hash<Precision>(coordinates);
 			data_[hash_key].emplace_back(coordinates, object);
 		}
 
@@ -49,7 +49,7 @@ namespace lochash
 		 */
 		void add(const CoordinateArray & coordinates)
 		{
-			std::size_t hash_key = generate_hash<Precision>(coordinates);
+			size_t hash_key = generate_hash<Precision>(coordinates);
 			data_[hash_key].emplace_back(coordinates, nullptr);
 		}
 
@@ -61,8 +61,8 @@ namespace lochash
 		 */
 		const BucketContent & query(const CoordinateArray & coordinates) const
 		{
-			std::size_t hash_key = generate_hash<Precision>(coordinates);
-			const auto  it       = data_.find(hash_key);
+			size_t     hash_key = generate_hash<Precision>(coordinates);
+			const auto it       = data_.find(hash_key);
 			if (it != data_.end()) {
 				return it->second;
 			} else {
@@ -79,8 +79,8 @@ namespace lochash
 		 */
 		bool remove(const CoordinateArray & coordinates)
 		{
-			std::size_t hash_key = generate_hash<Precision>(coordinates);
-			const auto  it       = data_.find(hash_key);
+			size_t     hash_key = generate_hash<Precision>(coordinates);
+			const auto it       = data_.find(hash_key);
 			if (it != data_.end()) {
 				auto & bucket = it->second;
 				for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
@@ -106,8 +106,8 @@ namespace lochash
 		 */
 		bool remove(ObjectType * object, const CoordinateArray & coordinates)
 		{
-			std::size_t hash_key = generate_hash<Precision>(coordinates);
-			const auto  it       = data_.find(hash_key);
+			size_t     hash_key = generate_hash<Precision>(coordinates);
+			const auto it       = data_.find(hash_key);
 			if (it != data_.end()) {
 				auto & bucket = it->second;
 				for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
@@ -162,7 +162,7 @@ namespace lochash
 		 *
 		 * @return The underlying data map.
 		 */
-		const std::unordered_map<std::size_t, BucketContent> & get_data() const { return data_; }
+		const std::unordered_map<size_t, BucketContent> & get_data() const { return data_; }
 
 		/**
 		 * Clears all data from the LocationHash.
@@ -172,7 +172,7 @@ namespace lochash
 	  private:
 		bool coordinates_match(const CoordinateArray & coords1, const CoordinateArray & coords2) const
 		{
-			for (std::size_t i = 0; i < Dimensions; ++i) {
+			for (size_t i = 0; i < Dimensions; ++i) {
 				if constexpr (std::is_floating_point<CoordinateType>::value) {
 					if (std::fabs(coords1[i] - coords2[i]) > std::numeric_limits<CoordinateType>::epsilon()) {
 						return false;
@@ -186,7 +186,7 @@ namespace lochash
 			return true;
 		}
 
-		std::unordered_map<std::size_t, BucketContent> data_;
+		std::unordered_map<size_t, BucketContent> data_;
 	};
 } // namespace lochash
 

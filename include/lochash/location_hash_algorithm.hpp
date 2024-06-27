@@ -20,7 +20,7 @@ namespace lochash
 	 * @return A combined hash value.
 	 */
 	template <typename T>
-	std::size_t hash_combine(std::size_t seed, const T & value)
+	size_t hash_combine(size_t seed, const T & value)
 	{
 		std::hash<T> hasher;
 		// Combines the current seed with the hash of the value using bitwise operations
@@ -52,8 +52,8 @@ namespace lochash
 	 * @param value The value to quantize.
 	 * @return The quantized value.
 	 */
-	template <typename T, std::size_t Precision>
-	constexpr std::size_t quantize_value(T value)
+	template <typename T, size_t Precision>
+	constexpr size_t quantize_value(T value)
 	{
 		static_assert(std::is_arithmetic<T>::value, "Only arithmetic types are supported");
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
@@ -63,7 +63,7 @@ namespace lochash
 		// bitwise operations are generally faster and have lower latency in modern CPUs.
 		// Division and modulo operations typically take multiple CPU cycles to complete,
 		// whereas bitwise operations usually execute in a single cycle.
-		return static_cast<std::size_t>(value) & ~(Precision - 1);
+		return static_cast<size_t>(value) & ~(Precision - 1);
 	}
 
 	/**
@@ -75,14 +75,14 @@ namespace lochash
 	 * @param coordinates The array of coordinates to quantize.
 	 * @return A quantized array of coordinates.
 	 */
-	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions>
-	std::array<std::size_t, Dimensions> quantize_coordinates(const std::array<CoordinateType, Dimensions> & coordinates)
+	template <size_t Precision, typename CoordinateType, size_t Dimensions>
+	std::array<size_t, Dimensions> quantize_coordinates(const std::array<CoordinateType, Dimensions> & coordinates)
 	{
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
 		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type");
 
-		std::array<std::size_t, Dimensions> quantized_coords;
-		for (std::size_t i = 0; i < Dimensions; ++i) {
+		std::array<size_t, Dimensions> quantized_coords;
+		for (size_t i = 0; i < Dimensions; ++i) {
 			quantized_coords[i] = quantize_value<CoordinateType, Precision>(coordinates[i]);
 		}
 		return quantized_coords;
@@ -98,13 +98,13 @@ namespace lochash
 	 * @param coordinates The array of values to hash.
 	 * @return A combined hash value.
 	 */
-	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions>
-	std::size_t generate_hash(const std::array<CoordinateType, Dimensions> & coordinates)
+	template <size_t Precision, typename CoordinateType, size_t Dimensions>
+	size_t generate_hash(const std::array<CoordinateType, Dimensions> & coordinates)
 	{
 		static_assert(std::is_arithmetic<CoordinateType>::value, "Only arithmetic types are supported");
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
 
-		std::size_t seed = 0;
+		size_t seed = 0;
 
 		// Quantize the coordinates first
 		// auto        quantized_coords = quantize_coordinates<Precision, CoordinateType, Dimensions>(coordinates);
@@ -128,12 +128,12 @@ namespace lochash
 	 * @tparam Precision The precision value. Must be a power of two.
 	 * @return The shift value for the precision.
 	 */
-	template <std::size_t Precision>
-	constexpr std::size_t calculate_precision_shift()
+	template <size_t Precision>
+	constexpr size_t calculate_precision_shift()
 	{
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
-		std::size_t shift = 0;
-		std::size_t value = Precision;
+		size_t shift = 0;
+		size_t value = Precision;
 		while (value > 1) {
 			value >>= 1;
 			++shift;
@@ -151,37 +151,36 @@ namespace lochash
 	 * @param max_coords The maximum coordinates for the range.
 	 * @return A vector of hash keys for all coordinates within the range.
 	 */
-	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions>
-	std::vector<std::size_t>
-	generate_all_hash_keys_within_range(const std::array<CoordinateType, Dimensions> & min_coords,
-	                                    const std::array<CoordinateType, Dimensions> & max_coords)
+	template <size_t Precision, typename CoordinateType, size_t Dimensions>
+	std::vector<size_t> generate_all_hash_keys_within_range(const std::array<CoordinateType, Dimensions> & min_coords,
+	                                                        const std::array<CoordinateType, Dimensions> & max_coords)
 	{
 		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
 
-		std::vector<std::size_t>            hash_keys;
-		std::array<std::size_t, Dimensions> steps;
-		constexpr std::size_t               precision_shift = calculate_precision_shift<Precision>();
+		std::vector<size_t>            hash_keys;
+		std::array<size_t, Dimensions> steps;
+		constexpr size_t               precision_shift = calculate_precision_shift<Precision>();
 
-		for (std::size_t i = 0; i < Dimensions; ++i) {
+		for (size_t i = 0; i < Dimensions; ++i) {
 			steps[i] =
 			    (quantize_value<CoordinateType, Precision>(max_coords[i] - min_coords[i]) >> precision_shift) + 1;
 		}
 
-		std::array<std::size_t, Dimensions> indices = {0};
-		bool                                done    = false;
+		std::array<size_t, Dimensions> indices = {0};
+		bool                           done    = false;
 
 		while (!done) {
 			std::array<CoordinateType, Dimensions> current_coords;
-			for (std::size_t i = 0; i < Dimensions; ++i) {
-				current_coords[i] = min_coords[i] + (indices[i] << precision_shift);
+			for (size_t i = 0; i < Dimensions; ++i) {
+				current_coords[i] = min_coords[i] + static_cast<CoordinateType>(indices[i] << precision_shift);
 			}
 
-			std::size_t hash_key = generate_hash<Precision>(current_coords);
+			size_t hash_key = generate_hash<Precision>(current_coords);
 			hash_keys.push_back(hash_key);
 
 			// Increment the indices array to generate the next coordinate in the range.
-			for (std::size_t i = 0; i < Dimensions; ++i) {
+			for (size_t i = 0; i < Dimensions; ++i) {
 				if (++indices[i] < steps[i]) {
 					break;
 				}

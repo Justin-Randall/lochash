@@ -2,7 +2,6 @@
 #include "test_helpers.hpp"
 #include "gtest/gtest.h"
 
-
 using namespace lochash;
 
 // Define a custom type for testing with associated objects
@@ -14,7 +13,7 @@ struct TestObject {
 // Test querying items within a certain distance from a point
 TEST(LocationHashQueryTest, QueryWithinDistance2D)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 2D coordinates with associated TestObject
 	LocationHash<precision, float, 2, TestObject> locationHash;
@@ -40,7 +39,7 @@ TEST(LocationHashQueryTest, QueryWithinDistance2D)
 // Test querying items within a certain distance from a point in 3D
 TEST(LocationHashQueryTest, QueryWithinDistance3D)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 3D coordinates with associated TestObject
 	LocationHash<precision, double, 3, TestObject> locationHash;
@@ -65,38 +64,58 @@ TEST(LocationHashQueryTest, QueryWithinDistance3D)
 
 TEST(LocationHelpersTest, QueryDistanceComplexity)
 {
-	const std::vector<std::size_t> object_counts = {10, 100, 1000, 10000};
-	std::vector<long long>         query_times;
+	constexpr size_t                              precision = 16;
+	LocationHash<precision, float, 2, TestObject> locationHash;
 
-	std::srand(static_cast<unsigned int>(std::time(nullptr)));
-
-	constexpr std::size_t   max_objects = 10000;
-	std::vector<TestObject> test_objects;
-	test_objects.reserve(max_objects);
-	for (std::size_t i = 0; i < max_objects; ++i) {
-		test_objects.push_back({static_cast<int>(i), "Object" + std::to_string(i)});
-	}
-
-	constexpr std::size_t precision = 16;
-	for (const auto count : object_counts) {
-		LocationHash<precision, float, 2, TestObject> locationHash;
-
+	auto setup = [&](size_t count) {
+		locationHash.clear();
+		std::vector<TestObject> test_objects;
+		test_objects.reserve(count);
 		for (int i = 0; i < count; ++i) {
+			test_objects.push_back({i, "Object" + std::to_string(i)});
 			const float x = -1000.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 2000.0f));
 			const float y = -1000.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 2000.0f));
 			locationHash.add(&test_objects[i], {x, y});
 		}
+	};
+	ComplexityThreshold complexity = measure_time_complexity(
+	    setup,
+	    [&](size_t) {
+		    query_within_distance(locationHash, {0.0f, 0.0f}, 500.0f);
+	    },
+	    {10, 100, 1000}, 5);
 
-		const auto start = std::chrono::high_resolution_clock::now();
-
-		const auto result = query_within_distance(locationHash, {0.0f, 0.0f}, 500.0f);
-
-		const auto end      = std::chrono::high_resolution_clock::now();
-		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-		query_times.push_back(duration);
-	}
-
-	// Test the complexity against an expected threshold (e.g., O(log n))
-	const auto determined_complexity = test_complexity(object_counts, query_times);
-	EXPECT_LE(determined_complexity, ComplexityThreshold::O1);
+	const ComplexityThreshold expectedComplexity = ComplexityThreshold::O1;
+	EXPECT_LE(complexity, expectedComplexity)
+	    << "QueryBoundingBoxComplexityLabmdas test failed. Expected complexity threshold not met. Reported complexity: "
+	    << to_string(complexity) << " Expected complexity: " << to_string(expectedComplexity);
 }
+
+TEST(GenerateAllHashKeysWithinDistanceTest, ReturnsCorrectHashKeysFor2D)
+{
+	constexpr size_t     precision = 4;
+	std::array<float, 2> center    = {0.0f, 0.0f};
+	float                radius    = 5.0f;
+	auto                 result    = generate_all_hash_keys_within_distance<precision, float, 2>(center, radius);
+	EXPECT_EQ(result.size(), 9);
+}
+
+TEST(GenerateAllHashKeysWithinDistanceTest, PrecisionIsPowerOfTwo)
+{
+	// This test ensures that the static assertion for precision being a power of two is in effect.
+	constexpr size_t   precision = 2;   // This should be a power of two for the test to compile
+	std::array<int, 1> center    = {0}; // Single dimension array for simplicity
+	int                radius    = 1;
+	auto               result    = generate_all_hash_keys_within_distance<precision, int, 1>(center, radius);
+	// No need for runtime assertion here, compilation success is the test
+}
+
+// This test is expected to fail compilation due to the static_assert if uncommented
+// TEST(GenerateAllHashKeysWithinDistanceTest, FailsForNonArithmeticType) {
+//     constexpr size_t precision = 4;
+//     struct NonArithmetic {};
+//     std::array<NonArithmetic, 1> center = {{}};
+//     NonArithmetic radius = {};
+//     auto result = generate_all_hash_keys_within_distance<precision, NonArithmetic, 1>(center, radius);
+//     // This test is designed to fail at compile time due to static_assert
+// }

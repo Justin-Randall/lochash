@@ -22,8 +22,8 @@ TEST(LocationHashRecursion, QueryBoundingBox3D)
 	// Creating recursive LocationHashes for a 3d environment.
 	// Player will be in some floating point coordinate system
 	// on an infinite map, with local queries within a map.
-	constexpr std::size_t player_precision      = 16;
-	constexpr std::size_t map_of_maps_precision = 16;
+	constexpr size_t player_precision      = 16;
+	constexpr size_t map_of_maps_precision = 16;
 
 	TestObject player1(1, "Player1", 0, 0, 0, 0.0f, 0.0f, 0.0f);
 	TestObject player2(2, "Player2", 0, 0, 0, 10.0, 10.0, 10.0);

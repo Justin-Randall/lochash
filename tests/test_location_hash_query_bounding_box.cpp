@@ -13,7 +13,7 @@ struct TestObject {
 // Test querying items in LocationHash with 2D coordinates
 TEST(LocationHelpersTest, QueryBoundingBox2D)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 2D coordinates with associated TestObject
 	LocationHash<precision, float, 2, TestObject> locationHash;
@@ -41,7 +41,7 @@ TEST(LocationHelpersTest, QueryBoundingBox2D)
 // Test querying items in LocationHash with 3D coordinates
 TEST(LocationHelpersTest, QueryBoundingBox3D)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 3D coordinates with associated TestObject
 	LocationHash<precision, double, 3, TestObject> locationHash;
@@ -69,7 +69,7 @@ TEST(LocationHelpersTest, QueryBoundingBox3D)
 // Test querying items in LocationHash with 4D coordinates
 TEST(LocationHelpersTest, QueryBoundingBox4D)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 4D coordinates with associated TestObject
 	LocationHash<precision, float, 4, TestObject> locationHash;
@@ -96,38 +96,29 @@ TEST(LocationHelpersTest, QueryBoundingBox4D)
 
 TEST(LocationHelpersTest, QueryBoundingBoxComplexity)
 {
-	const std::vector<std::size_t> object_counts = {10, 100, 1000, 10000};
-	std::vector<long long>         query_times;
+	constexpr size_t                              precision = 16;
+	LocationHash<precision, float, 2, TestObject> locationHash;
 
-	std::srand(static_cast<unsigned int>(std::time(nullptr)));
-
-	constexpr std::size_t   max_objects = 10000;
-	std::vector<TestObject> test_objects;
-	test_objects.reserve(max_objects);
-	for (std::size_t i = 0; i < max_objects; ++i) {
-		test_objects.push_back({static_cast<int>(i), "Object" + std::to_string(i)});
-	}
-
-	constexpr std::size_t precision = 16;
-	for (const auto count : object_counts) {
-		LocationHash<precision, float, 2, TestObject> locationHash;
-
+	auto setup = [&](size_t count) {
+		locationHash.clear();
+		std::vector<TestObject> test_objects;
+		test_objects.reserve(count);
 		for (int i = 0; i < count; ++i) {
+			test_objects.push_back({i, "Object" + std::to_string(i)});
 			const float x = -1000.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 2000.0f));
 			const float y = -1000.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 2000.0f));
 			locationHash.add(&test_objects[i], {x, y});
 		}
+	};
+	ComplexityThreshold complexity = measure_time_complexity(
+	    setup,
+	    [&](size_t) {
+		    query_bounding_box(locationHash, {-50.0f, -50.0f}, {50.0f, 50.0f});
+	    },
+	    {10, 100, 1000}, 5);
 
-		const auto start = std::chrono::high_resolution_clock::now();
-
-		const auto result = query_bounding_box(locationHash, {-500.0f, -500.0f}, {500.0f, 500.0f});
-
-		const auto end      = std::chrono::high_resolution_clock::now();
-		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-		query_times.push_back(duration);
-	}
-
-	// Test the complexity against an expected threshold (e.g., O(log n))
-	const auto determined_complexity = test_complexity(object_counts, query_times);
-	EXPECT_LE(determined_complexity, ComplexityThreshold::O1);
+	const ComplexityThreshold expectedComplexity = ComplexityThreshold::O1;
+	EXPECT_LE(complexity, expectedComplexity)
+	    << "QueryBoundingBoxComplexityLabmdas test failed. Expected complexity threshold not met. Reported complexity: "
+	    << to_string(complexity) << " Expected complexity: " << to_string(expectedComplexity);
 }

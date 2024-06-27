@@ -1,56 +1,102 @@
 #include "test_helpers.hpp"
+#include "gtest/gtest.h"
 
-ComplexityThreshold test_complexity(const std::vector<std::size_t> & counts, const std::vector<long long> & timings)
+std::string to_string(ComplexityThreshold threshold)
 {
-	auto it_counts  = counts.begin();
-	auto it_timings = timings.begin();
+	// convert enum to string
+	switch (threshold) {
+	case ComplexityThreshold::O1:
+		return "O(1)";
+	case ComplexityThreshold::OLOGN:
+		return "O(log n)";
+	case ComplexityThreshold::ON:
+		return "O(n)";
+	case ComplexityThreshold::ONLOGN:
+		return "O(n log n)";
+	case ComplexityThreshold::ON2:
+		return "O(n^2)";
+	case ComplexityThreshold::ON3:
+		return "O(n^3)";
+	case ComplexityThreshold::O2N:
+		return "O(2^n)";
+	case ComplexityThreshold::OFACT:
+		return "O(n!)";
+	default:
+		return "Unknown";
+	}
+}
 
-	// Ensure that we have at least two data points
-	if (counts.size() < 2 || timings.size() < 2) {
-		throw std::invalid_argument("At least two data points are required");
+double measure_execution_time(const std::function<void(size_t)> & setup, const std::function<void(size_t)> & lambda,
+                              size_t input_size, size_t repetitions)
+{
+	using namespace std::chrono;
+	double total_time = 0.0;
+
+	for (int i = 0; i < repetitions; ++i) {
+		setup(input_size);
+
+		auto start = high_resolution_clock::now();
+		lambda(input_size);
+		auto             end     = high_resolution_clock::now();
+		duration<double> elapsed = end - start;
+		total_time += elapsed.count();
 	}
 
-	ComplexityThreshold determined_threshold = ComplexityThreshold::O1;
-	const double        epsilon              = 1e-9;
+	double average_time = total_time / repetitions;
+	return average_time;
+}
 
-	while (std::next(it_counts) != counts.end() && std::next(it_timings) != timings.end()) {
-		const double n_ratio    = static_cast<double>(*std::next(it_counts)) / *it_counts;
-		double       time_ratio = static_cast<double>(*std::next(it_timings)) / *it_timings;
-
-		// Check for very small timing values to avoid division by zero or infinite ratios
-		if (*it_timings < epsilon || *std::next(it_timings) < epsilon) {
-			time_ratio = epsilon; // Set a minimum ratio to avoid zero or infinite issues
-		}
-
-		const double expected_ologn_ratio  = std::log2(n_ratio);
-		const double expected_on_ratio     = n_ratio;
-		const double expected_onlogn_ratio = n_ratio * std::log2(n_ratio);
-		const double expected_on2_ratio    = n_ratio * n_ratio;
-		const double expected_on3_ratio    = n_ratio * n_ratio * n_ratio;
-		const double expected_o2n_ratio    = std::pow(2, n_ratio);
-		const double expected_ofact_ratio  = std::tgamma(n_ratio + 1);
-
-		if (time_ratio < expected_ologn_ratio) {
-			determined_threshold = ComplexityThreshold::O1;
-		} else if (time_ratio < expected_on_ratio) {
-			determined_threshold = ComplexityThreshold::OLOGN;
-		} else if (time_ratio < expected_onlogn_ratio) {
-			determined_threshold = ComplexityThreshold::ON;
-		} else if (time_ratio < expected_on2_ratio) {
-			determined_threshold = ComplexityThreshold::ONLOGN;
-		} else if (time_ratio < expected_on3_ratio) {
-			determined_threshold = ComplexityThreshold::ON2;
-		} else if (time_ratio < expected_o2n_ratio) {
-			determined_threshold = ComplexityThreshold::ON3;
-		} else if (time_ratio < expected_ofact_ratio) {
-			determined_threshold = ComplexityThreshold::O2N;
-		} else {
-			determined_threshold = ComplexityThreshold::OFACT;
-		}
-
-		++it_counts;
-		++it_timings;
+ComplexityThreshold determine_complexity(const std::vector<double> & times, const std::vector<size_t> & input_sizes)
+{
+	if (times.size() != input_sizes.size() || times.size() < 2) {
+		throw std::invalid_argument("Input vectors must be of the same size and contain at least two elements.");
 	}
 
-	return determined_threshold;
+	std::vector<double> ratios;
+
+	for (size_t i = 1; i < times.size(); ++i) {
+		ratios.push_back(times[i] / times[i - 1]);
+	}
+
+	for (size_t i = 1; i < input_sizes.size(); ++i) {
+		double log_ratio =
+		    std::log2(static_cast<double>(input_sizes[i])) / std::log2(static_cast<double>(input_sizes[i - 1]));
+
+		if (ratios[i - 1] < log_ratio) {
+			return ComplexityThreshold::O1;
+		} else if (ratios[i - 1] < static_cast<double>(input_sizes[i]) / input_sizes[i - 1]) {
+			return ComplexityThreshold::OLOGN;
+		} else if (ratios[i - 1] < static_cast<double>(input_sizes[i] * std::log2(input_sizes[i])) /
+		                               (input_sizes[i - 1] * std::log2(input_sizes[i - 1]))) {
+			return ComplexityThreshold::ON;
+		} else if (ratios[i - 1] < static_cast<double>(input_sizes[i] * std::log2(input_sizes[i]) * input_sizes[i]) /
+		                               (input_sizes[i - 1] * std::log2(input_sizes[i - 1]) * input_sizes[i - 1])) {
+			return ComplexityThreshold::ONLOGN;
+		} else if (ratios[i - 1] <
+		           static_cast<double>(input_sizes[i] * input_sizes[i]) / (input_sizes[i - 1] * input_sizes[i - 1])) {
+			return ComplexityThreshold::ON2;
+		} else if (ratios[i - 1] < static_cast<double>(input_sizes[i] * input_sizes[i] * input_sizes[i]) /
+		                               (input_sizes[i - 1] * input_sizes[i - 1] * input_sizes[i - 1])) {
+			return ComplexityThreshold::ON3;
+		} else if (ratios[i - 1] < std::pow(2.0, input_sizes[i]) / std::pow(2.0, input_sizes[i - 1])) {
+			return ComplexityThreshold::O2N;
+		}
+	}
+
+	return ComplexityThreshold::OFACT; // Default case
+}
+
+ComplexityThreshold measure_time_complexity(const std::function<void(size_t)> & setup,
+                                            const std::function<void(size_t)> & lambda,
+                                            const std::vector<size_t> & input_sizes, size_t repetitions)
+{
+	std::vector<double> times;
+
+	for (const auto & input_size : input_sizes) {
+		double avg_time = measure_execution_time(setup, lambda, input_size, repetitions);
+		times.push_back(avg_time);
+	}
+
+	ComplexityThreshold complexity = determine_complexity(times, input_sizes);
+	return complexity;
 }

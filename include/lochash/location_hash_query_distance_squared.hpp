@@ -17,13 +17,13 @@ namespace lochash
 			return (a - b) * (a - b);
 		}
 
-		template <typename CoordinateType, std::size_t Dimensions>
+		template <typename CoordinateType, size_t Dimensions>
 		CoordinateType calculate_distance_squared(const std::array<CoordinateType, Dimensions> & point1,
 		                                          const std::array<CoordinateType, Dimensions> & point2)
 		{
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 			CoordinateType distance_squared = 0;
-			for (std::size_t i = 0; i < Dimensions; ++i) {
+			for (size_t i = 0; i < Dimensions; ++i) {
 				distance_squared += squared_difference(point1[i], point2[i]);
 			}
 			return distance_squared;
@@ -40,9 +40,9 @@ namespace lochash
 	 * @param radius The distance from the center point.
 	 * @return A vector of hash keys within the specified distance.
 	 */
-	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions>
-	std::vector<std::size_t>
-	generate_all_hash_keys_within_distance(const std::array<CoordinateType, Dimensions> & center, CoordinateType radius)
+	template <size_t Precision, typename CoordinateType, size_t Dimensions>
+	std::vector<size_t> generate_all_hash_keys_within_distance(const std::array<CoordinateType, Dimensions> & center,
+	                                                           CoordinateType                                 radius)
 	{
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
 		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
@@ -50,7 +50,7 @@ namespace lochash
 		std::array<CoordinateType, Dimensions> lower_bounds;
 		std::array<CoordinateType, Dimensions> upper_bounds;
 
-		for (std::size_t i = 0; i < Dimensions; ++i) {
+		for (size_t i = 0; i < Dimensions; ++i) {
 			lower_bounds[i] = center[i] - radius;
 			upper_bounds[i] = center[i] + radius;
 		}
@@ -70,7 +70,7 @@ namespace lochash
 	 * @param radius The distance from the center point.
 	 * @return A vector of pointers to objects within the specified distance.
 	 */
-	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions, typename ObjectType>
+	template <size_t Precision, typename CoordinateType, size_t Dimensions, typename ObjectType>
 	std::vector<ObjectType *>
 	query_within_distance(const LocationHash<Precision, CoordinateType, Dimensions, ObjectType> & locationHash,
 	                      const std::array<CoordinateType, Dimensions> & center, CoordinateType radius)

@@ -1,3 +1,5 @@
+#ifndef _INCLUDED_test_helpers_hpp
+#define _INCLUDED_test_helpers_hpp
 #include "gtest/gtest.h"
 #include <vector>
 
@@ -16,31 +18,28 @@ enum class ComplexityThreshold {
 	OFACT   // O(n!). Time ratio should be greater than O(n!).
 };
 
+std::string to_string(ComplexityThreshold threshold);
+
 /**
- * Test the complexity of an algorithm by comparing the timings of different data points. Recommend using std::chrono or
- * other high-precision timers.
+ * @brief Measure the asymptotic time complexity of a function.
  *
- * The threshold returned is the highest complexity threshold that the algorithm fits within. For example, if the
- * algorithm fits within O(n) and O(n log n), the threshold will be O(n).
+ * @param setup
+ * A setup function that prepares the input for the lambda function. The setup function should take a single size_t for
+ * input size.
  *
- * OFACT is the slowest complexity threshold and means the algorithm is at least as bad as traveling salesman brute
- * force.
+ * @param lambda
+ * The lambda function to measure. The lambda function should take a single size_t for input size.
  *
- * If 4 runs of 20, 200, 2000, and 20000 elements take the same amount of time, the complexity is O(1). If the time
- * increases linearly with the number of elements, the complexity is O(n). If the time increases logarithmically with
- * the number of elements, the complexity is O(log n). If the time increases linearithmically with the number of
- * elements, the complexity is O(n log n). If the time increases quadratically with the number of elements, the
- * complexity is O(n^2). If the time increases cubically with the number of elements, the complexity is O(n^3). If the
- * time increases exponentially with the number of elements, the complexity is O(2^n). If the time increases factorially
- * with the number of elements, the complexity is O(n!).
+ * @param input_sizes
+ * A vector of input sizes to test.
  *
- * The threshold should be one order of complexity higher than expected, since perfect implementations and noise with
- * timing will almost always cause measurements to be slightly higher than expected in a perfect implementation. If the
- * expected complexity is O(1), the threshold should be O(log n) because it means that is provably not performing with
- * O(1) complexity.
+ * @param repetitions
+ * The number of times to repeat the lambda function for each input size.
  *
- * @param counts The number of elements for each data point.
- * @param timings The timings for each data point.
- * @return The determined complexity threshold.
+ * @return ComplexityThreshold
  */
-ComplexityThreshold test_complexity(const std::vector<std::size_t> & counts, const std::vector<long long> & timings);
+ComplexityThreshold measure_time_complexity(const std::function<void(size_t input_size)> & setup,
+                                            const std::function<void(size_t input_size)> & lambda,
+                                            const std::vector<size_t> & input_sizes, size_t repetitions = 10);
+
+#endif // _INCLUDED_test_helpers_hpp

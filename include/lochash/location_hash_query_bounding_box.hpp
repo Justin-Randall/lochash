@@ -20,14 +20,14 @@ namespace lochash
 		}
 
 		// Helper function to check if coordinates are within bounds using arrays
-		template <typename CoordinateType, std::size_t Dimensions>
+		template <typename CoordinateType, size_t Dimensions>
 		bool within_bounds(const std::array<CoordinateType, Dimensions> & coordinates,
 		                   const std::array<CoordinateType, Dimensions> & lower_bounds,
 		                   const std::array<CoordinateType, Dimensions> & upper_bounds)
 		{
 			static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 
-			for (std::size_t i = 0; i < Dimensions; ++i) {
+			for (size_t i = 0; i < Dimensions; ++i) {
 				if (!within_bounds(coordinates[i], lower_bounds[i], upper_bounds[i])) {
 					return false;
 				}
@@ -48,7 +48,7 @@ namespace lochash
 	 * @param upper_bounds The upper bounds of the bounding box.
 	 * @return A vector of pointers to objects within the bounding box.
 	 */
-	template <std::size_t Precision, typename CoordinateType, std::size_t Dimensions, typename ObjectType>
+	template <size_t Precision, typename CoordinateType, size_t Dimensions, typename ObjectType>
 	std::vector<ObjectType *>
 	query_bounding_box(const LocationHash<Precision, CoordinateType, Dimensions, ObjectType> & locationHash,
 	                   const std::array<CoordinateType, Dimensions> &                          lower_bounds,

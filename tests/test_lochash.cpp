@@ -15,7 +15,7 @@ struct TestObject {
 // Test moving items in LocationHash with 2D coordinates
 TEST(LocationHashTest, Move2DCoordinates)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 2D coordinates with no associated object
 	LocationHash<precision, float, 2> locationHash;
@@ -41,7 +41,7 @@ TEST(LocationHashTest, Move2DCoordinates)
 // Test moving items in LocationHash with 3D coordinates and associated object
 TEST(LocationHashTest, Move3DCoordinatesWithObject)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 3D coordinates with associated TestObject
 	LocationHash<precision, double, 3, TestObject> locationHash;
@@ -72,7 +72,7 @@ TEST(LocationHashTest, Move3DCoordinatesWithObject)
 // Test moving items in LocationHash with 4D coordinates using epsilon for floating-point types
 TEST(LocationHashTest, Move4DCoordinatesWithEpsilon)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 4D coordinates with no associated object
 	LocationHash<precision, float, 4> locationHash;
@@ -99,7 +99,7 @@ TEST(LocationHashTest, Move4DCoordinatesWithEpsilon)
 // Test adding, querying, and removing items in LocationHash with 2D coordinates
 TEST(LocationHashTest, AddQueryRemove2DCoordinates)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 2D coordinates with no associated object
 	LocationHash<precision, float, 2> locationHash;
@@ -128,7 +128,7 @@ TEST(LocationHashTest, AddQueryRemove2DCoordinates)
 // Test adding, querying, and removing items in LocationHash with 3D coordinates and associated object
 TEST(LocationHashTest, AddQueryRemove3DCoordinatesWithObject)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 3D coordinates with associated TestObject
 	LocationHash<precision, double, 3, TestObject> locationHash;
@@ -161,7 +161,7 @@ TEST(LocationHashTest, AddQueryRemove3DCoordinatesWithObject)
 // Test adding, querying, and removing items in LocationHash with 4D coordinates using epsilon for floating-point types
 TEST(LocationHashTest, AddQueryRemove4DCoordinatesWithEpsilon)
 {
-	constexpr std::size_t precision = 16;
+	constexpr size_t precision = 16;
 
 	// Create a LocationHash for 4D coordinates with no associated object
 	LocationHash<precision, float, 4> locationHash;
