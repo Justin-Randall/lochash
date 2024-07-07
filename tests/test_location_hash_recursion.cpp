@@ -25,9 +25,9 @@ TEST(LocationHashRecursion, QueryBoundingBox3D)
 	constexpr size_t player_precision      = 16;
 	constexpr size_t map_of_maps_precision = 16;
 
-	TestObject player1(1, "Player1", 0, 0, 0, 0.0f, 0.0f, 0.0f);
-	TestObject player2(2, "Player2", 0, 0, 0, 10.0, 10.0, 10.0);
-	TestObject player3(3, "Player3", 1, 0, 0, 20.0, 20.0, 20.0);
+	TestObject player1{1, "Player1", 0, 0, 0, 0.0f, 0.0f, 0.0f};
+	TestObject player2{2, "Player2", 0, 0, 0, 10.0, 10.0, 10.0};
+	TestObject player3{3, "Player3", 1, 0, 0, 20.0, 20.0, 20.0};
 
 	LocationHash<player_precision, float, 3, TestObject>                                              map1Hash;
 	LocationHash<player_precision, float, 3, TestObject>                                              map2Hash;
