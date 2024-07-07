@@ -1,5 +1,8 @@
 # Location Hash (lochash)
 
+![Build Status](https://github.com/Justin-Randall/lochash/actions/workflows/cmake-multi-platform.yml/badge.svg)
+[![codecov](https://codecov.io/gh/Justin-Randall/lochash/graph/badge.svg?token=IYN1GQM2NY)](https://codecov.io/gh/Justin-Randall/lochash)
+
 LocHash is an *n*-dimensional location hash spatial database.
 
 ## Purpose
