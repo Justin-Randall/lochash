@@ -126,7 +126,7 @@ TEST(test_hash_algorithm, Performance)
 	auto lambda = [](size_t) { generate_hash<precision, int, 4>({16, 32, 48, 64}); };
 
 	const auto complexity = measure_time_complexity(setup, lambda, {4, 4, 4, 4}, repetitions);
-	EXPECT_LE(complexity, ComplexityThreshold::O1);
+	EXPECT_LE(complexity, Complexity::O1);
 }
 
 TEST(HashKeyGenerationTest, GeneratesCorrectNumberOfKeys)

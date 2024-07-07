@@ -78,14 +78,14 @@ TEST(LocationHelpersTest, QueryDistanceComplexity)
 			locationHash.add(&test_objects[i], {x, y});
 		}
 	};
-	ComplexityThreshold complexity = measure_time_complexity(
+	Complexity complexity = measure_time_complexity(
 	    setup,
 	    [&](size_t) {
 		    query_within_distance(locationHash, {0.0f, 0.0f}, 500.0f);
 	    },
 	    {10, 100, 1000}, 5);
 
-	const ComplexityThreshold expectedComplexity = ComplexityThreshold::O1;
+	const Complexity expectedComplexity = Complexity::O1;
 	EXPECT_LE(complexity, expectedComplexity)
 	    << "QueryBoundingBoxComplexityLabmdas test failed. Expected complexity threshold not met. Reported complexity: "
 	    << to_string(complexity) << " Expected complexity: " << to_string(expectedComplexity);

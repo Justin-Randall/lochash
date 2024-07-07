@@ -1,3 +1,16 @@
+# ###############################################
+# Configuration Variables
+#
+# Set this to whatever the best coverage report
+# has produced. Recommend to always INCREASE it
+# because BETTER is BETTER and 100 is BEST.
+# Defaults to 100 since this template should
+# always have 100% coverage before committing to
+# source control.
+set(TEST_COVERAGE_THRESHOLD 98)
+
+# End Configuration Variables
+# ###############################################
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 include(FetchContent)
@@ -10,40 +23,101 @@ FetchContent_MakeAvailable(googletest)
 
 set(UNIT_TEST ${PROJECT_NAME}_tests)
 
-add_executable(${UNIT_TEST} "test_${PROJECT_NAME}.cpp"
+add_executable(${UNIT_TEST}
+  "test_${PROJECT_NAME}.cpp"
+
+  # ############################################
+  # Comment these to exclude some helper functions
+  # Not required for the project, but useful for testing
+  # things like time complexity and others
+  # defined in test_helpers.hpp By default they are
+  # included in the project so they are tested when
+  # pushed.
+  "test_helpers.cpp"
+  "test_helpers_measure_execution_time.cpp"
+  "test_helpers_to_string_complexity_enum.cpp"
+  "test_helpers_determine_complexity.cpp"
+  "test_helpers_measure_time_complexity.cpp"
+
+  # ############################################
   "test_location_hash_algorithm.cpp"
   "test_location_hash_query_bounding_box.cpp"
   "test_location_hash_query_distance_squared.cpp"
   "test_location_hash_recursion.cpp"
-  "test_helpers.cpp"
 )
 
 target_compile_features(${UNIT_TEST} PRIVATE cxx_std_20)
-
 target_link_libraries(${UNIT_TEST} PRIVATE gtest_main)
 
 add_test(NAME ${UNIT_TEST} COMMAND ${UNIT_TEST})
 
 include_directories("${gtest_SOURCE_DIR}/include")
 
-find_program(OpenCppCoverage_BINARY OpenCppCoverage.exe)
-
+# Set up test command line options
 set(TEST_COMMAND_LINE_OPTIONS ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> -R "^${UNIT_TEST}$" --output-on-failures)
 
+# Optionally find coverage tools
+find_program(OpenCppCoverage_BINARY OpenCppCoverage.exe)
+find_program(GCOV_BINARY gcov)
+find_program(LCOV_BINARY lcov)
+find_program(GENHTML_BINARY genhtml)
+find_program(GCOVR_BINARY gcovr)
+
+# Define the coverage target unconditionally
+add_custom_target(coverage
+
+  # ALL # Cannot be ALL because it wrecks the CI build on GitHub Actions
+  DEPENDS ${UNIT_TEST}
+  COMMAND ${UNIT_TEST}
+  COMMENT "Run coverage report and tests"
+  WORKING_DIRECTORY ${CMAKE_TEST_DIRECTORY}
+)
+
+string(REPLACE "/" "\\" OPEN_CPP_COVERAGE_SOURCE_DIR ${CMAKE_SOURCE_DIR})
+
+# Conditional coverage report commands for Debug build
 if(OpenCppCoverage_BINARY)
   add_custom_command(
-    TARGET ${UNIT_TEST}
-    COMMENT "Run coverage report and tests"
-    POST_BUILD
-    WORKING_DIRECTORY ${CMAKE_TEST_DIRECTORY}
-    COMMAND ${OpenCppCoverage_BINARY} --quiet --export_type cobertura:${CMAKE_SOURCE_DIR}/build/coverage.xml --cover_children --sources herald --excluded_modules system32 --excluded_sources build\\_deps --excluded_sources googletest\\include\\gtest -- ${TEST_COMMAND_LINE_OPTIONS}
+    TARGET coverage
+    COMMAND ${OpenCppCoverage_BINARY} --quiet --export_type cobertura:${CMAKE_SOURCE_DIR}/build/coverage.xml --cover_children --sources ${OPEN_CPP_COVERAGE_SOURCE_DIR} --excluded_modules system32 --excluded_sources build\\_deps --excluded_sources googletest\\include\\gtest -- ${TEST_COMMAND_LINE_OPTIONS}
+    COMMENT "Run OpenCppCoverage"
   )
-else()
+
   add_custom_command(
-    TARGET ${UNIT_TEST}
-    COMMENT "Run tests"
-    POST_BUILD
-    WORKING_DIRECTORY ${CMAKE_TEST_DIRECTORY}
-    COMMAND ${TEST_COMMAND_LINE_OPTIONS}
+    TARGET coverage
+    COMMAND ${CMAKE_COMMAND} -E echo "Checking coverage percentage"
+    COMMAND powershell.exe -File ${CMAKE_SOURCE_DIR}/scripts/check_coverage.ps1 -coverageFile ${CMAKE_SOURCE_DIR}/build/coverage.xml -threshold ${TEST_COVERAGE_THRESHOLD}
+    COMMENT "Capture coverage percentage"
   )
+
+elseif(GCOV_BINARY AND LCOV_BINARY AND GENHTML_BINARY AND GCOVR_BINARY)
+  # Add coverage flags
+  target_compile_options(${UNIT_TEST} PRIVATE --coverage -g -O0)
+  target_link_libraries(${UNIT_TEST} PRIVATE --coverage)
+
+  add_custom_command(
+    TARGET coverage
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/coverage
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage
+    COMMAND ${TEST_COMMAND_LINE_OPTIONS}
+    COMMAND ${CMAKE_COMMAND} -E sleep 1 # Ensure test execution completes
+    COMMAND ${LCOV_BINARY} --capture --directory ${CMAKE_BINARY_DIR} --output-file ${CMAKE_BINARY_DIR}/coverage/lcov.info
+    COMMAND ${LCOV_BINARY} --remove ${CMAKE_BINARY_DIR}/coverage/lcov.info '/usr/*' --output-file ${CMAKE_BINARY_DIR}/coverage/lcov.info
+    COMMAND ${LCOV_BINARY} --remove ${CMAKE_BINARY_DIR}/coverage/lcov.info '*/build/*' --output-file ${CMAKE_BINARY_DIR}/coverage/lcov.info
+    COMMAND ${LCOV_BINARY} --list ${CMAKE_BINARY_DIR}/coverage/lcov.info
+    COMMAND ${GENHTML_BINARY} ${CMAKE_BINARY_DIR}/coverage/lcov.info --output-directory ${CMAKE_SOURCE_DIR}/build/coverage
+    COMMAND gcovr -r . --xml-pretty > ${CMAKE_SOURCE_DIR}/build/coverage/coverage.xml
+    COMMAND ${CMAKE_COMMAND} -E echo "Coverage report generated by lcov and genhtml. See ${CMAKE_SOURCE_DIR}/build/coverage for details."
+    COMMENT "Run gcov, lcov, and genhtml coverage report and tests"
+  )
+
+  add_custom_command(
+    TARGET coverage
+    COMMAND ${CMAKE_COMMAND} -E echo "Checking coverage percentage"
+    COMMAND ${CMAKE_SOURCE_DIR}/scripts/check_coverage.sh ${LCOV_BINARY} ${CMAKE_BINARY_DIR}/coverage/lcov.info ${TEST_COVERAGE_THRESHOLD}
+    COMMENT "Capture coverage percentage"
+  )
+
+else()
+  message(WARNING "Coverage tools (OpenCppCoverage, gcov, lcov, genhtml, gcovr) not found. Coverage report will not be generated.")
 endif()
