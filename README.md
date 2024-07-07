@@ -74,3 +74,5 @@ Of course, the location hash only allocates space where locations are added.
 The implementation relies heavily on the C++ standard library with modern features. Compiler upgrades for optimizations and features come freely. The generated code is already well optimized. Drop-in standard library replacements for fine-tuned for specific applications, such as gaming or AI, should work if they are API compliant.
 
 There is liberal use of static_assert<> to unsnarl the worst of compiler errors with template instantiation output to direct users away from improper usage (things like mixing types for coordinates, for example).
+
+Bump.
