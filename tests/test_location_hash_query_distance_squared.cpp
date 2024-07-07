@@ -73,8 +73,8 @@ TEST(LocationHelpersTest, QueryDistanceComplexity)
 		test_objects.reserve(count);
 		for (int i = 0; i < count; ++i) {
 			test_objects.push_back({i, "Object" + std::to_string(i)});
-			const float x = -1000.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 2000.0f));
-			const float y = -1000.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 2000.0f));
+			const float x = -1000.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 2000));
+			const float y = -1000.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 2000));
 			locationHash.add(&test_objects[i], {x, y});
 		}
 	};
