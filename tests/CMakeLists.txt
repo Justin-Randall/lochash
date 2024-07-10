@@ -49,6 +49,13 @@ add_executable(${UNIT_TEST}
 target_compile_features(${UNIT_TEST} PRIVATE cxx_std_20)
 target_link_libraries(${UNIT_TEST} PRIVATE gtest_main)
 
+# Set maximum warning levels and treat warnings as errors
+if(MSVC)
+  target_compile_options(${UNIT_TEST} PRIVATE /W4 /WX)
+else()
+  target_compile_options(${UNIT_TEST} PRIVATE -Wall -Wextra -pedantic -Werror)
+endif()
+
 add_test(NAME ${UNIT_TEST} COMMAND ${UNIT_TEST})
 
 include_directories("${gtest_SOURCE_DIR}/include")
