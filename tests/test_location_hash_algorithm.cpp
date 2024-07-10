@@ -214,7 +214,7 @@ TEST(QuantizeCoordinatesTest, PrecisionIsPowerOfTwo)
 	// This test ensures that the static assertion for precision being a power of two is in effect.
 	constexpr size_t   precision   = 2;   // This should be a power of two for the test to compile
 	std::array<int, 1> coordinates = {3}; // Single dimension array for simplicity
-	auto               result      = quantize_coordinates<precision, int, 1>(coordinates);
+	quantize_coordinates<precision, int, 1>(coordinates);
 	// No need for runtime assertion here, compilation success is the test
 }
 
