@@ -5,7 +5,7 @@
 TEST(MeasureTimeComplexityTest, ConstantTimeComplexity)
 {
 	auto setup  = [](size_t) {};
-	auto lambda = [](size_t input_size) {
+	auto lambda = [](size_t) {
 		std::this_thread::yield();
 		return;
 	};

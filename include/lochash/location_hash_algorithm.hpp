@@ -9,6 +9,8 @@
 #include <type_traits>
 #include <vector>
 
+using ssize_t = std::make_signed<size_t>::type;
+
 namespace lochash
 {
 	/**
@@ -53,7 +55,7 @@ namespace lochash
 	 * @return The quantized value.
 	 */
 	template <typename T, size_t Precision>
-	constexpr size_t quantize_value(T value)
+	constexpr ssize_t quantize_value(T value)
 	{
 		static_assert(std::is_arithmetic<T>::value, "Only arithmetic types are supported");
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");

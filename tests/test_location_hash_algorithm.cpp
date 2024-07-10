@@ -156,19 +156,19 @@ TEST(QuantizeValueTest, QuantizesIntegerCorrectly)
 
 TEST(QuantizeValueTest, QuantizesNegativeIntegerCorrectly)
 {
-	constexpr int    value     = -10;
-	constexpr size_t precision = 8;
-	constexpr size_t expected  = -16; // -10 quantized to nearest lower multiple of 8 is -16
-	constexpr auto   result    = quantize_value<int, precision>(value);
+	constexpr int     value     = -10;
+	constexpr size_t  precision = 8;
+	constexpr ssize_t expected  = -16; // -10 quantized to nearest lower multiple of 8 is -16
+	constexpr auto    result    = quantize_value<int, precision>(value);
 	EXPECT_EQ(result, expected);
 }
 
 TEST(QuantizeValueTest, QuantizesFloatingPointCorrectly)
 {
-	constexpr double value     = 10.75;
-	constexpr size_t precision = 4;
-	constexpr size_t expected  = 8; // 10.75 quantized to nearest lower multiple of 4 is 8
-	constexpr auto   result    = quantize_value<double, precision>(value);
+	constexpr double  value     = 10.75;
+	constexpr size_t  precision = 4;
+	constexpr ssize_t expected  = 8; // 10.75 quantized to nearest lower multiple of 4 is 8
+	constexpr auto    result    = quantize_value<double, precision>(value);
 	EXPECT_EQ(result, expected);
 }
 
@@ -178,7 +178,7 @@ TEST(QuantizeValueTest, PrecisionIsPowerOfTwo)
 	// Note: This test will not compile if the static assertion fails, serving as a compile-time check.
 	constexpr int    value     = 10;
 	constexpr size_t precision = 4; // This should be a power of two for the test to compile
-	constexpr auto   result    = quantize_value<int, precision>(value);
+	quantize_value<int, precision>(value);
 	// No need for runtime assertion here, compilation success is the test
 }
 
