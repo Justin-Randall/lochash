@@ -7,7 +7,7 @@ LocHash is an *n*-dimensional location hash spatial database.
 
 ## Purpose
 
-There are a number of popular spatial database algorithms, from quad-trees and binary space partitions to statically processed potentially visible set (PVS) graphs. This one in particular is most often used for parallel computation, structured query and distributed processing.
+There are a number of popular spatial database algorithms, from quad-trees and binary space partitions to statically processed potentially visible set (PVS) graphs. This one in particular is most often used for parallel computation, structured queries and distributed processing. It is intended to dramatically *reduce* the number of precision calculations required based on coordinate proximity in some data-space (such as, but not restricted to, location).
 
 ## Design
 
@@ -15,7 +15,7 @@ The underlying design is elegantly simple. Coordinates are first quantized to na
 
 The storage algorighm utilizes an amortized-constant time unordered map for lookups, insertions and removals. It is optimized for reads and inserts. The implementation uses an std::unordered_map to allow for custom allocators (say, a stack allocation strategy to avoid slower heap and locking, if it all fits ... or a small-block allocator for fixed-size, etc.).
 
-This maps especially well to distributed, back-end mapping, where individual buckets may be associated with event-streaming channels across multiple servers at web-scale so that millions or billions of objects that may potentially interact are localized to a processor by location. Clients (and servers) can make a very fast calculation to determine which broadcast channels to subscribe to.
+This fits especially well with distributed, back-end mapping, where individual buckets may be associated with event-streaming channels across multiple servers at web-scale so that millions or billions of objects that may potentially interact are localized to a processor by location. Clients (and servers) can make a very fast calculation to determine which broadcast channels to subscribe to.
 
 It also works very well in standalone clients that have millions of objects instantiated, but need to cull potential interactions to other objects in the immediate vacinity -- so a range query returns a handful of buckets, at most, with a few objects in each, reducing the number of precision queries required for things like collision detection or other interactions.
 
@@ -78,4 +78,12 @@ The implementation relies heavily on the C++ standard library with modern featur
 
 There is liberal use of static_assert<> to unsnarl the worst of compiler errors with template instantiation output to direct users away from improper usage (things like mixing types for coordinates, for example).
 
-Bump.
+## Other Uses
+
+This *n-dimensional* database is also well-suited for semantic maps or many other applications where various coordinates can aggregate to co-locate datapoints on proximity. For example, matchmaking players on similar traits: their skill on an X axis, their ping on a Y axis, their community rating on a Z axis and maybe throw others in such as "community engagement" on a W axis ... and so on, and so on.
+
+## Caveat
+
+This is a *hash*-based algorith. This means collisions are *possible*. The goal is to reduce very large data sets to very small data sets to make fewer, expensive yet precise calculations. There may be 10 *trillion* potentially relavent objects in the data space. Lochash can reduce that to a few or maybe a dozen very quickly and efficiently. It is no garauntee that some irrelevant calculations may be included.
+
+For example, a 128-dimension neural network may produce vectorized results for context. A lochash can query and bucket similar results by semantic relavence. This is algorithm is not restricted to physics and message routing.
