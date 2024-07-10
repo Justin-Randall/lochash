@@ -27,6 +27,10 @@ TEST(LocationHashTest, Move2DCoordinates)
 	// Move an existing coordinate
 	EXPECT_TRUE(locationHash.move({1.0f, 2.0f}, {10.0f, 20.0f}));
 
+	// The quantized coordinates should be the same and so should the hash key.
+	// The move() operation should return false (not moved) if the coordinates are the same.
+	EXPECT_FALSE(locationHash.move({10.0f, 20.0f}, {11.0f, 21.0f}));
+
 	// Ensure the coordinate is moved
 	const auto & old_bucket = locationHash.query({1.0f, 2.0f});
 	EXPECT_TRUE(old_bucket.empty());
@@ -67,6 +71,9 @@ TEST(LocationHashTest, Move3DCoordinatesWithObject)
 
 	// Move a non-existing coordinate by object
 	EXPECT_FALSE(locationHash.move(&obj1, {100.0, 200.0, 300.0}, {150.0, 250.0, 350.0}));
+
+	// Move an existing object within the precision parameters and expect a false result
+	EXPECT_FALSE(locationHash.move(&obj1, {10.0, 20.0, 30.0}, {10.1, 20.1, 30.1}));
 }
 
 // Test moving items in LocationHash with 4D coordinates using epsilon for floating-point types

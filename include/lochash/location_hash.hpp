@@ -132,6 +132,10 @@ namespace lochash
 		 */
 		bool move(const CoordinateArray & old_coordinates, const CoordinateArray & new_coordinates)
 		{
+			if (buckets_match(old_coordinates, new_coordinates)) {
+				return false;
+			}
+
 			if (remove(old_coordinates)) {
 				add(new_coordinates);
 				return true;
@@ -150,6 +154,10 @@ namespace lochash
 		 */
 		bool move(ObjectType * object, const CoordinateArray & old_coordinates, const CoordinateArray & new_coordinates)
 		{
+			if (buckets_match(old_coordinates, new_coordinates)) {
+				return false;
+			}
+
 			if (remove(object, old_coordinates)) {
 				add(object, new_coordinates);
 				return true;
@@ -170,6 +178,15 @@ namespace lochash
 		void clear() { data_.clear(); }
 
 	  private:
+		bool buckets_match(const CoordinateArray & coords1, const CoordinateArray & coords2) const
+		{
+			const auto old_coordinates_hash = generate_hash<Precision>(coords1);
+			const auto new_coordinates_hash = generate_hash<Precision>(coords2);
+			if (old_coordinates_hash == new_coordinates_hash) {
+				return true;
+			}
+			return false;
+		}
 		bool coordinates_match(const CoordinateArray & coords1, const CoordinateArray & coords2) const
 		{
 			for (size_t i = 0; i < Dimensions; ++i) {
