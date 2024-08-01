@@ -194,4 +194,33 @@ TEST(LocationHashTest, AddQueryRemove4DCoordinatesWithEpsilon)
 	EXPECT_TRUE(locationHash.query({16.0f, 32.0f, 48.0f, 64.0f}).empty());
 }
 
+// Test adding an object with a radius so that it is placed in multiple buckets
+TEST(LocationHashTest, AddObjectWithRadius)
+{
+	constexpr size_t precision = 16;
+
+	// Create a LocationHash for 2D coordinates with associated TestObject
+	LocationHash<precision, float, 2, TestObject> locationHash;
+
+	// Create a test object with a radius
+	TestObject obj1{1, "Object1"};
+
+	// The location should be near a corner of the bucket so that inserting it with a radius
+	// will place it in multiple buckets
+	const auto keys = locationHash.add(&obj1, {15.0f, 15.0f}, 4.0f);
+
+	// Query and ensure coordinates are present in multiple buckets
+	ASSERT_EQ(keys.size(), 4);
+	const auto & data = locationHash.get_data();
+	for (const auto & key : keys) {
+		const auto it = data.find(key);
+		ASSERT_NE(it, data.end());
+		ASSERT_EQ(it->second.size(), 1);
+		EXPECT_EQ(it->second[0].second, &obj1);
+	}
+
+	// move with radius
+	const auto movedKeys = locationHash.move(&obj1, 4.0f, {15.0f, 15.0f}, {21.0f, 21.0f});
+	ASSERT_EQ(movedKeys.size(), 1);
+}
 // ----------------------------------------------------------------------------

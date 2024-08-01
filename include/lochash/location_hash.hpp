@@ -43,6 +43,29 @@ namespace lochash
 		}
 
 		/**
+		 * Adds coordinates and optionally an associated object pointer to the appropriate buckets.
+		 * Used when an object has a size and needs to be added to multiple buckets. Even if an
+		 * object is not as large as a bucket, it may be near an edge or corner and overlap multiple
+		 * buckets. This optimizes queries so searching one bucket will return the object, even if its
+		 * center is in another bucket.
+		 *
+		 * @param object Pointer to the associated object (optional, only if ObjectType is not void).
+		 * @param coordinates Array of coordinate inputs.
+		 * @param radius The radius of the bucket.
+		 */
+		std::vector<size_t> add(ObjectType * object, const CoordinateArray & coordinates, CoordinateType radius)
+		{
+			// generate keys for all the buckets within the radius
+			auto keys =
+			    generate_all_hash_keys_within_distance<Precision, CoordinateType, Dimensions>(coordinates, radius);
+			for (auto key : keys) {
+				data_[key].emplace_back(coordinates, object);
+			}
+
+			return keys;
+		}
+
+		/**
 		 * Adds coordinates to the appropriate bucket.
 		 *
 		 * @param coordinates Array of coordinate inputs.
@@ -123,6 +146,29 @@ namespace lochash
 			return false;
 		}
 
+		bool remove(ObjectType * object, const CoordinateArray & coordinates, const CoordinateType radius)
+		{
+			auto keys =
+			    generate_all_hash_keys_within_distance<Precision, CoordinateType, Dimensions>(coordinates, radius);
+			bool removed = false;
+			for (auto key : keys) {
+				const auto it = data_.find(key);
+				if (it != data_.end()) {
+					auto & bucket = it->second;
+					for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
+						if (bucket_it->second == object) {
+							bucket.erase(bucket_it);
+							removed = true;
+							break;
+						}
+					}
+					if (bucket.empty()) {
+						data_.erase(it);
+					}
+				}
+			}
+			return removed;
+		}
 		/**
 		 * Moves a coordinate and optionally an associated object from one bucket to another.
 		 *
@@ -163,6 +209,20 @@ namespace lochash
 				return true;
 			}
 			return false;
+		}
+
+		std::vector<size_t> move(ObjectType * object, const CoordinateType & radius,
+		                         const CoordinateArray & old_coordinates, const CoordinateArray & new_coordinates)
+		{
+			// early out if coordinates are the same
+			if (coordinates_match(old_coordinates, new_coordinates)) {
+				return generate_all_hash_keys_within_distance<Precision, CoordinateType, Dimensions>(old_coordinates,
+				                                                                                     radius);
+			}
+
+			remove(object, old_coordinates, radius);
+			auto keys = add(object, new_coordinates, radius);
+			return keys;
 		}
 
 		/**

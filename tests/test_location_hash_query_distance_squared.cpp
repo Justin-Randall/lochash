@@ -97,7 +97,7 @@ TEST(GenerateAllHashKeysWithinDistanceTest, ReturnsCorrectHashKeysFor2D)
 	std::array<float, 2> center    = {0.0f, 0.0f};
 	float                radius    = 5.0f;
 	auto                 result    = generate_all_hash_keys_within_distance<precision, float, 2>(center, radius);
-	EXPECT_EQ(result.size(), 9);
+	EXPECT_EQ(result.size(), 16);
 }
 
 TEST(GenerateAllHashKeysWithinDistanceTest, PrecisionIsPowerOfTwo)

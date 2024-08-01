@@ -108,11 +108,6 @@ namespace lochash
 
 		size_t seed = 0;
 
-		// Quantize the coordinates first
-		// auto        quantized_coords = quantize_coordinates<Precision, CoordinateType, Dimensions>(coordinates);
-		// for (const auto & value : quantized_coords) {
-		// 	seed = hash_combine(seed, value);
-		// }
 		// Initial seed with quantized first value
 		// Quantization ensures values are grouped into buckets defined by Precision
 		for (const auto & value : coordinates) {
@@ -164,9 +159,12 @@ namespace lochash
 		std::array<size_t, Dimensions> steps;
 		constexpr size_t               precision_shift = calculate_precision_shift<Precision>();
 
+		// Calculate the number of steps required for each dimension
 		for (size_t i = 0; i < Dimensions; ++i) {
-			steps[i] =
-			    (quantize_value<CoordinateType, Precision>(max_coords[i] - min_coords[i]) >> precision_shift) + 1;
+			steps[i] = ((quantize_value<CoordinateType, Precision>(max_coords[i]) -
+			             quantize_value<CoordinateType, Precision>(min_coords[i])) >>
+			            precision_shift) +
+			           1;
 		}
 
 		std::array<size_t, Dimensions> indices = {0};
@@ -178,7 +176,7 @@ namespace lochash
 				current_coords[i] = min_coords[i] + static_cast<CoordinateType>(indices[i] << precision_shift);
 			}
 
-			size_t hash_key = generate_hash<Precision>(current_coords);
+			size_t hash_key = generate_hash<Precision, CoordinateType, Dimensions>(current_coords);
 			hash_keys.push_back(hash_key);
 
 			// Increment the indices array to generate the next coordinate in the range.
@@ -194,6 +192,54 @@ namespace lochash
 		}
 
 		return hash_keys;
+	}
+
+	// Helper function to calculate squared difference between coordinates
+	template <typename CoordinateType>
+	CoordinateType squared_difference(CoordinateType a, CoordinateType b)
+	{
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+		return (a - b) * (a - b);
+	}
+
+	template <typename CoordinateType, size_t Dimensions>
+	CoordinateType calculate_distance_squared(const std::array<CoordinateType, Dimensions> & point1,
+	                                          const std::array<CoordinateType, Dimensions> & point2)
+	{
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+		CoordinateType distance_squared = 0;
+		for (size_t i = 0; i < Dimensions; ++i) {
+			distance_squared += squared_difference(point1[i], point2[i]);
+		}
+		return distance_squared;
+	}
+
+	/***
+	 * Generate all hash keys within a certain distance from a point.
+	 *
+	 * @tparam Precision The precision value for quantization. Must be a power of two.
+	 * @tparam CoordinateType The type of the coordinates.
+	 * @tparam Dimensions The number of dimensions.
+	 * @param center The center point to calculate distance from.
+	 * @param radius The distance from the center point.
+	 * @return A vector of hash keys within the specified distance.
+	 */
+	template <size_t Precision, typename CoordinateType, size_t Dimensions>
+	std::vector<size_t> generate_all_hash_keys_within_distance(const std::array<CoordinateType, Dimensions> & center,
+	                                                           CoordinateType                                 radius)
+	{
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
+		std::array<CoordinateType, Dimensions> lower_bounds;
+		std::array<CoordinateType, Dimensions> upper_bounds;
+
+		for (size_t i = 0; i < Dimensions; ++i) {
+			lower_bounds[i] = center[i] - radius;
+			upper_bounds[i] = center[i] + radius;
+		}
+
+		return generate_all_hash_keys_within_range<Precision, CoordinateType, Dimensions>(lower_bounds, upper_bounds);
 	}
 
 } // namespace lochash
