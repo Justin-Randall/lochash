@@ -222,5 +222,9 @@ TEST(LocationHashTest, AddObjectWithRadius)
 	// move with radius
 	const auto movedKeys = locationHash.move(&obj1, 4.0f, {15.0f, 15.0f}, {21.0f, 21.0f});
 	ASSERT_EQ(movedKeys.size(), 1);
+
+	// cover the "zero move" case
+	const auto zeroMovedKeys = locationHash.move(&obj1, 4.0f, {21.0f, 21.0f}, {21.0f, 21.0f});
+	ASSERT_EQ(zeroMovedKeys.size(), 1); // fast return existing keys
 }
 // ----------------------------------------------------------------------------
