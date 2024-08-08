@@ -3,6 +3,7 @@
 
 #include "location_hash_types.hpp"
 #include <array>
+#include <functional>
 
 namespace lochash
 {
