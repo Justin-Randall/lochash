@@ -2,7 +2,7 @@
 #define _INCLUDED_location_hash_quantized_coordinate_hpp
 
 #include "location_hash_types.hpp"
-#include <algorithm>
+#include <array>
 
 namespace lochash
 {
