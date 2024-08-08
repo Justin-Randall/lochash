@@ -4,6 +4,7 @@
 #include "location_hash_types.hpp"
 #include <array>
 #include <functional>
+#include <vector>
 
 namespace lochash
 {
@@ -91,5 +92,103 @@ namespace std
 		}
 	};
 } // namespace std
+
+namespace lochash
+{
+	/**
+	 * @brief Quantizes the lower and upper bounds specficied by min_coords and max_coords respectively
+	 *   to return a vector of all quantized coordinates within the specified range. These may be used
+	 *   as keys to search the location hash for non-empty buckets.
+	 *
+	 *   For example, coordinates from (-24.4f, -15.0f) to (24.4f, 15.0f) with a precision of 4 will
+	 *   return 4^2 = 16 distinct quantized coordinates -- (-24, 12), (-24, 8) ... and so on until(24, 12).
+	 *
+	 *   The map may contain zero (not found) or more entries for each quantized coordinate.
+	 *
+	 * @tparam Precision
+	 * @tparam CoordinateType
+	 * @tparam Dimensions
+	 * @param min_coords
+	 * @param max_coords
+	 * @return std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions>>
+	 */
+	template <size_t Precision, typename CoordinateType, size_t Dimensions>
+	std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions>>
+	generate_all_quantized_coordinates_within_range(const std::array<CoordinateType, Dimensions> & min_coords,
+	                                                const std::array<CoordinateType, Dimensions> & max_coords)
+	{
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
+
+		std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions>> quantized_coords;
+		std::array<size_t, Dimensions>                                          steps;
+		constexpr size_t precision_shift = calculate_precision_shift<Precision>();
+
+		// Calculate the number of steps required for each dimension
+		for (size_t i = 0; i < Dimensions; ++i) {
+			steps[i] = ((quantize_value<CoordinateType, Precision>(max_coords[i]) -
+			             quantize_value<CoordinateType, Precision>(min_coords[i])) >>
+			            precision_shift) +
+			           1;
+		}
+
+		std::array<size_t, Dimensions> indices = {0};
+		bool                           done    = false;
+
+		while (!done) {
+			std::array<CoordinateType, Dimensions> current_coords;
+			for (size_t i = 0; i < Dimensions; ++i) {
+				current_coords[i] = min_coords[i] + static_cast<CoordinateType>(indices[i] << precision_shift);
+			}
+
+			quantized_coords.emplace_back(current_coords);
+
+			// Increment the indices array to generate the next coordinate in the range.
+			for (size_t i = 0; i < Dimensions; ++i) {
+				if (++indices[i] < steps[i]) {
+					break;
+				}
+				indices[i] = 0;
+				if (i == Dimensions - 1) {
+					done = true;
+				}
+			}
+		}
+
+		return quantized_coords;
+	}
+
+	/**
+	 * @brief Calculates lower and upper bounds of a bounding box centered at the specified center, then
+	 *  passes the calculation to generate_all_quantized_coordinates_within_range to return a vector of
+	 *  all quantized coordinates within the specified distance. These may be used as keys to search the
+	 *  location hash for non-empty buckets.
+	 *
+	 * @tparam Precision
+	 * @tparam CoordinateType
+	 * @tparam Dimensions
+	 * @param center
+	 * @param radius
+	 * @return std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions>>
+	 */
+	template <size_t Precision, typename CoordinateType, size_t Dimensions>
+	std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions>>
+	generate_all_quantized_coordinates_within_distance(const std::array<CoordinateType, Dimensions> & center,
+	                                                   CoordinateType                                 radius)
+	{
+		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
+		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
+
+		std::array<CoordinateType, Dimensions> lower_bounds;
+		std::array<CoordinateType, Dimensions> upper_bounds;
+
+		for (size_t i = 0; i < Dimensions; ++i) {
+			lower_bounds[i] = center[i] - radius;
+			upper_bounds[i] = center[i] + radius;
+		}
+		return generate_all_quantized_coordinates_within_range<Precision, CoordinateType, Dimensions>(lower_bounds,
+		                                                                                              upper_bounds);
+	}
+} // namespace lochash
 
 #endif //_INCLUDED_location_hash_quantized_coordinate_hpp

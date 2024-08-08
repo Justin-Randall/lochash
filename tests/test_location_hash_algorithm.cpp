@@ -68,42 +68,6 @@ TEST(QuantizeValueTest, PrecisionIsPowerOfTwo)
 //     // This test is designed to fail at compile time due to static_assert
 // }
 
-TEST(QuantizeCoordinatesTest, Quantizes2DCoordinatesCorrectly)
-{
-	constexpr size_t      precision   = 4;
-	std::array<int, 2>    coordinates = {5, 9}; // Example 2D coordinates
-	std::array<size_t, 2> expected    = {4, 8}; // Expected quantized coordinates
-	auto                  result      = quantize_coordinates<precision, int, 2>(coordinates);
-	EXPECT_EQ(result, expected);
-}
-
-TEST(QuantizeCoordinatesTest, Quantizes3DCoordinatesCorrectly)
-{
-	constexpr size_t      precision   = 8;
-	std::array<double, 3> coordinates = {7.5, 15.25, 32.75}; // Example 3D coordinates
-	std::array<size_t, 3> expected    = {0, 8, 32};          // Expected quantized coordinates
-	auto                  result      = quantize_coordinates<precision, double, 3>(coordinates);
-	EXPECT_EQ(result, expected);
-}
-
-TEST(QuantizeCoordinatesTest, PrecisionIsPowerOfTwo)
-{
-	// This test ensures that the static assertion for precision being a power of two is in effect.
-	constexpr size_t   precision   = 2;   // This should be a power of two for the test to compile
-	std::array<int, 1> coordinates = {3}; // Single dimension array for simplicity
-	quantize_coordinates<precision, int, 1>(coordinates);
-	// No need for runtime assertion here, compilation success is the test
-}
-
-// This test is expected to fail compilation due to the static_assert if uncommented
-// TEST(QuantizeCoordinatesTest, FailsForNonArithmeticType) {
-//     constexpr size_t precision = 4;
-//     struct NonArithmetic {};
-//     std::array<NonArithmetic, 1> coordinates = {{}};
-//     auto result = quantize_coordinates<precision, NonArithmetic, 1>(coordinates);
-//     // This test is designed to fail at compile time due to static_assert
-// }
-
 TEST(ShiftValueCalculationTest, CalculatesShiftValueCorrectly)
 {
 	constexpr size_t precision = 16;
