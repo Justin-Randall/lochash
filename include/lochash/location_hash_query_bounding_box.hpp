@@ -60,12 +60,12 @@ namespace lochash
 		std::vector<ObjectType *> result;
 
 		// Generate all hash keys within the specified range
-		auto hash_keys =
-		    generate_all_hash_keys_within_range<Precision, CoordinateType, Dimensions>(lower_bounds, upper_bounds);
+		auto keys = generate_all_quantized_coordinates_within_range<Precision, CoordinateType, Dimensions>(
+		    lower_bounds, upper_bounds);
 
 		const auto & locationHashData = locationHash.get_data();
-		for (const auto & hash_key : hash_keys) {
-			const auto it = locationHashData.find(hash_key);
+		for (const auto & key : keys) {
+			const auto it = locationHashData.find(key);
 			if (it != locationHashData.end()) {
 				for (const auto & [coordinates, object] : it->second) {
 					if (detail::within_bounds(coordinates, lower_bounds, upper_bounds)) {

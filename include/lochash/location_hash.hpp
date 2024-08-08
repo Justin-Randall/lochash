@@ -2,6 +2,7 @@
 #define _INCLUDED_location_hash_HPP
 
 #include "location_hash_algorithm.hpp"
+#include "location_hash_quantized_coordinate.hpp"
 #include <algorithm>
 #include <array>
 #include <unordered_map>
@@ -29,6 +30,10 @@ namespace lochash
 		static constexpr size_t dimension_count = Dimensions;
 		using CoordinateArray                   = std::array<CoordinateType, Dimensions>;
 		using BucketContent                     = std::vector<std::pair<CoordinateArray, ObjectType *>>;
+		using CoordinateMap =
+		    std::unordered_map<QuantizedCoordinate<Precision, CoordinateType, Dimensions>, BucketContent>;
+
+		using QuantizedCoordinateType = QuantizedCoordinate<Precision, CoordinateType, Dimensions>;
 
 		/**
 		 * Adds coordinates and optionally an associated object pointer to the appropriate bucket.
@@ -38,8 +43,8 @@ namespace lochash
 		 */
 		void add(ObjectType * object, const CoordinateArray & coordinates)
 		{
-			size_t hash_key = generate_hash<Precision>(coordinates);
-			data_[hash_key].emplace_back(coordinates, object);
+			data_[QuantizedCoordinate<Precision, CoordinateType, Dimensions>(coordinates)].emplace_back(coordinates,
+			                                                                                            object);
 		}
 
 		/**
@@ -53,11 +58,12 @@ namespace lochash
 		 * @param coordinates Array of coordinate inputs.
 		 * @param radius The radius of the bucket.
 		 */
-		std::vector<size_t> add(ObjectType * object, const CoordinateArray & coordinates, CoordinateType radius)
+		std::vector<QuantizedCoordinateType> add(ObjectType * object, const CoordinateArray & coordinates,
+		                                         CoordinateType radius)
 		{
 			// generate keys for all the buckets within the radius
-			auto keys =
-			    generate_all_hash_keys_within_distance<Precision, CoordinateType, Dimensions>(coordinates, radius);
+			auto keys = generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions>(
+			    coordinates, radius);
 			for (auto key : keys) {
 				data_[key].emplace_back(coordinates, object);
 			}
@@ -72,8 +78,8 @@ namespace lochash
 		 */
 		void add(const CoordinateArray & coordinates)
 		{
-			size_t hash_key = generate_hash<Precision>(coordinates);
-			data_[hash_key].emplace_back(coordinates, nullptr);
+			// Implicit conversion to QuantizedCoordinate, so fine to use CoordinateArray as a key
+			data_[coordinates].emplace_back(coordinates, nullptr);
 		}
 
 		/**
@@ -84,8 +90,7 @@ namespace lochash
 		 */
 		const BucketContent & query(const CoordinateArray & coordinates) const
 		{
-			size_t     hash_key = generate_hash<Precision>(coordinates);
-			const auto it       = data_.find(hash_key);
+			const auto it = data_.find(QuantizedCoordinate<Precision, CoordinateType, Dimensions>(coordinates));
 			if (it != data_.end()) {
 				return it->second;
 			} else {
@@ -102,8 +107,8 @@ namespace lochash
 		 */
 		bool remove(const CoordinateArray & coordinates)
 		{
-			size_t     hash_key = generate_hash<Precision>(coordinates);
-			const auto it       = data_.find(hash_key);
+			QuantizedCoordinate key = QuantizedCoordinate<Precision, CoordinateType, Dimensions>(coordinates);
+			const auto          it  = data_.find(key);
 			if (it != data_.end()) {
 				auto & bucket = it->second;
 				for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
@@ -129,8 +134,8 @@ namespace lochash
 		 */
 		bool remove(ObjectType * object, const CoordinateArray & coordinates)
 		{
-			size_t     hash_key = generate_hash<Precision>(coordinates);
-			const auto it       = data_.find(hash_key);
+			QuantizedCoordinate key = QuantizedCoordinate<Precision, CoordinateType, Dimensions>(coordinates);
+			const auto          it  = data_.find(key);
 			if (it != data_.end()) {
 				auto & bucket = it->second;
 				for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
@@ -148,8 +153,8 @@ namespace lochash
 
 		bool remove(ObjectType * object, const CoordinateArray & coordinates, const CoordinateType radius)
 		{
-			auto keys =
-			    generate_all_hash_keys_within_distance<Precision, CoordinateType, Dimensions>(coordinates, radius);
+			auto keys = generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions>(
+			    coordinates, radius);
 			bool removed = false;
 			for (auto key : keys) {
 				const auto it = data_.find(key);
@@ -211,13 +216,14 @@ namespace lochash
 			return false;
 		}
 
-		std::vector<size_t> move(ObjectType * object, const CoordinateType & radius,
-		                         const CoordinateArray & old_coordinates, const CoordinateArray & new_coordinates)
+		std::vector<QuantizedCoordinateType> move(ObjectType * object, const CoordinateType & radius,
+		                                          const CoordinateArray & old_coordinates,
+		                                          const CoordinateArray & new_coordinates)
 		{
 			// early out if coordinates are the same
 			if (coordinates_match(old_coordinates, new_coordinates)) {
-				return generate_all_hash_keys_within_distance<Precision, CoordinateType, Dimensions>(old_coordinates,
-				                                                                                     radius);
+				return generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions>(
+				    old_coordinates, radius);
 			}
 
 			remove(object, old_coordinates, radius);
@@ -230,7 +236,8 @@ namespace lochash
 		 *
 		 * @return The underlying data map.
 		 */
-		const std::unordered_map<size_t, BucketContent> & get_data() const { return data_; }
+		// const std::unordered_map<size_t, BucketContent> & get_data() const { return data_; }
+		const CoordinateMap & get_data() const { return data_; }
 
 		/**
 		 * Clears all data from the LocationHash.
@@ -240,13 +247,14 @@ namespace lochash
 	  private:
 		bool buckets_match(const CoordinateArray & coords1, const CoordinateArray & coords2) const
 		{
-			const auto old_coordinates_hash = generate_hash<Precision>(coords1);
-			const auto new_coordinates_hash = generate_hash<Precision>(coords2);
-			if (old_coordinates_hash == new_coordinates_hash) {
+			const auto old_coordinates = QuantizedCoordinate<Precision, CoordinateType, Dimensions>(coords1);
+			const auto new_coordinates = QuantizedCoordinate<Precision, CoordinateType, Dimensions>(coords2);
+			if (old_coordinates == new_coordinates) {
 				return true;
 			}
 			return false;
 		}
+
 		bool coordinates_match(const CoordinateArray & coords1, const CoordinateArray & coords2) const
 		{
 			for (size_t i = 0; i < Dimensions; ++i) {
@@ -263,7 +271,7 @@ namespace lochash
 			return true;
 		}
 
-		std::unordered_map<size_t, BucketContent> data_;
+		CoordinateMap data_;
 	};
 } // namespace lochash
 

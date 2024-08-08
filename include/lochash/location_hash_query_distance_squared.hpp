@@ -33,7 +33,7 @@ namespace lochash
 
 		// Generate all hash keys within the specified distance
 		const auto hash_keys =
-		    generate_all_hash_keys_within_distance<Precision, CoordinateType, Dimensions>(center, radius);
+		    generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions>(center, radius);
 
 		const auto & locationHashData = locationHash.get_data();
 		for (const auto & hash_key : hash_keys) {

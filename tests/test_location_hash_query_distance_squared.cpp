@@ -96,7 +96,7 @@ TEST(GenerateAllHashKeysWithinDistanceTest, ReturnsCorrectHashKeysFor2D)
 	constexpr size_t     precision = 4;
 	std::array<float, 2> center    = {0.0f, 0.0f};
 	float                radius    = 5.0f;
-	auto                 result    = generate_all_hash_keys_within_distance<precision, float, 2>(center, radius);
+	auto result = generate_all_quantized_coordinates_within_distance<precision, float, 2>(center, radius);
 	EXPECT_EQ(result.size(), 16);
 }
 
@@ -106,7 +106,7 @@ TEST(GenerateAllHashKeysWithinDistanceTest, PrecisionIsPowerOfTwo)
 	constexpr size_t   precision = 2;   // This should be a power of two for the test to compile
 	std::array<int, 1> center    = {0}; // Single dimension array for simplicity
 	int                radius    = 1;
-	auto               result    = generate_all_hash_keys_within_distance<precision, int, 1>(center, radius);
+	auto               result = generate_all_quantized_coordinates_within_distance<precision, int, 1>(center, radius);
 	// No need for runtime assertion here, compilation success is the test
 }
 
