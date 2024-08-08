@@ -37,28 +37,6 @@ namespace lochash
 	}
 
 	/**
-	 * Quantizes an array of coordinates based on the specified precision.
-	 *
-	 * @tparam Precision The precision value for quantization. Must be a power of two.
-	 * @tparam CoordinateType The type of the coordinates. Must be an arithmetic type.
-	 * @tparam Dimensions The number of dimensions.
-	 * @param coordinates The array of coordinates to quantize.
-	 * @return A quantized array of coordinates.
-	 */
-	// template <size_t Precision, typename CoordinateType, size_t Dimensions>
-	// std::array<size_t, Dimensions> quantize_coordinates(const std::array<CoordinateType, Dimensions> & coordinates)
-	// {
-	// 	static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
-	// 	static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type");
-
-	// 	std::array<size_t, Dimensions> quantized_coords;
-	// 	for (size_t i = 0; i < Dimensions; ++i) {
-	// 		quantized_coords[i] = quantize_value<CoordinateType, Precision>(coordinates[i]);
-	// 	}
-	// 	return quantized_coords;
-	// }
-
-	/**
 	 * Calculates the shift value for the precision.
 	 * This function is used to determine the number of bits to shift for quantization.
 	 *
