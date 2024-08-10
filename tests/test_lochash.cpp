@@ -218,6 +218,14 @@ TEST(LocationHashTest, AddObjectWithRadius)
 		ASSERT_EQ(it->second.size(), 1);
 		EXPECT_EQ(it->second[0].second, &obj1);
 	}
+	ASSERT_EQ(keys[0].quantized_[0], 0);
+	ASSERT_EQ(keys[0].quantized_[1], 0);
+	ASSERT_EQ(keys[1].quantized_[0], 16);
+	ASSERT_EQ(keys[1].quantized_[1], 0);
+	ASSERT_EQ(keys[2].quantized_[0], 0);
+	ASSERT_EQ(keys[2].quantized_[1], 16);
+	ASSERT_EQ(keys[3].quantized_[0], 16);
+	ASSERT_EQ(keys[3].quantized_[1], 16);
 
 	// move with radius
 	const auto movedKeys = locationHash.move(&obj1, 4.0f, {15.0f, 15.0f}, {21.0f, 21.0f});

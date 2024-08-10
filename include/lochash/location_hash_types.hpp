@@ -5,6 +5,6 @@
 
 namespace lochash
 {
-	using QuantizedCoordinateIntegerType = std::size_t;
+	using QuantizedCoordinateIntegerType = int64_t;
 } // namespace lochash
 #endif //_INCLUDED_location_hash_types_hpp

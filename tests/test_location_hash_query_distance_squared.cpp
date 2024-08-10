@@ -98,6 +98,38 @@ TEST(GenerateAllHashKeysWithinDistanceTest, ReturnsCorrectHashKeysFor2D)
 	float                radius    = 5.0f;
 	auto result = generate_all_quantized_coordinates_within_distance<precision, float, 2>(center, radius);
 	EXPECT_EQ(result.size(), 16);
+	EXPECT_EQ(result[0].quantized_[0], -8);
+	EXPECT_EQ(result[0].quantized_[1], -8);
+	EXPECT_EQ(result[1].quantized_[0], -4);
+	EXPECT_EQ(result[1].quantized_[1], -8);
+	EXPECT_EQ(result[2].quantized_[0], 0);
+	EXPECT_EQ(result[2].quantized_[1], -8);
+	EXPECT_EQ(result[3].quantized_[0], 4);
+	EXPECT_EQ(result[3].quantized_[1], -8);
+	EXPECT_EQ(result[4].quantized_[0], -8);
+	EXPECT_EQ(result[4].quantized_[1], -4);
+	EXPECT_EQ(result[5].quantized_[0], -4);
+	EXPECT_EQ(result[5].quantized_[1], -4);
+	EXPECT_EQ(result[6].quantized_[0], 0);
+	EXPECT_EQ(result[6].quantized_[1], -4);
+	EXPECT_EQ(result[7].quantized_[0], 4);
+	EXPECT_EQ(result[7].quantized_[1], -4);
+	EXPECT_EQ(result[8].quantized_[0], -8);
+	EXPECT_EQ(result[8].quantized_[1], 0);
+	EXPECT_EQ(result[9].quantized_[0], -4);
+	EXPECT_EQ(result[9].quantized_[1], 0);
+	EXPECT_EQ(result[10].quantized_[0], 0);
+	EXPECT_EQ(result[10].quantized_[1], 0);
+	EXPECT_EQ(result[11].quantized_[0], 4);
+	EXPECT_EQ(result[11].quantized_[1], 0);
+	EXPECT_EQ(result[12].quantized_[0], -8);
+	EXPECT_EQ(result[12].quantized_[1], 4);
+	EXPECT_EQ(result[13].quantized_[0], -4);
+	EXPECT_EQ(result[13].quantized_[1], 4);
+	EXPECT_EQ(result[14].quantized_[0], 0);
+	EXPECT_EQ(result[14].quantized_[1], 4);
+	EXPECT_EQ(result[15].quantized_[0], 4);
+	EXPECT_EQ(result[15].quantized_[1], 4);
 }
 
 TEST(GenerateAllHashKeysWithinDistanceTest, PrecisionIsPowerOfTwo)
