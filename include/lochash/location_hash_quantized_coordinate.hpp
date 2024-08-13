@@ -52,6 +52,8 @@ namespace lochash
 		bool operator==(const QuantizedCoordinate & other) const
 		{
 #if USE_SIMD // Really annoying that compilers do not already emit this code, but also understandable
+#pragma warning(push)
+#pragma warning(disable : 4800) // yes, I know what I am doing here
 			if constexpr (Dimensions == 1) {
 				return quantized_[0] == other.quantized_[0];
 			} else if constexpr (Dimensions == 2) {
@@ -115,6 +117,7 @@ namespace lochash
 				}
 				return true;
 			}
+#pragma warning(pop)
 #else
 			// Old way that works, but is slower
 			for (size_t i = 0; i < Dimensions; ++i) {

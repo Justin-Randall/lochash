@@ -41,6 +41,7 @@ add_executable(${UNIT_TEST}
 
   # ############################################
   "test_location_hash_algorithm.cpp"
+  "test_location_hash_quantized_coordinate.cpp"
   "test_location_hash_query_bounding_box.cpp"
   "test_location_hash_query_distance_squared.cpp"
   "test_location_hash_recursion.cpp"
