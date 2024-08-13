@@ -235,4 +235,46 @@ TEST(LocationHashTest, AddObjectWithRadius)
 	const auto zeroMovedKeys = locationHash.move(&obj1, 4.0f, {21.0f, 21.0f}, {21.0f, 21.0f});
 	ASSERT_EQ(zeroMovedKeys.size(), 1); // fast return existing keys
 }
+
+TEST(LocationHashTest, AddObjectWithRadius32)
+{
+	constexpr size_t precision = 16;
+
+	// Create a LocationHash for 2D coordinates with associated TestObject
+	LocationHash<precision, float, 2, TestObject, int32_t> locationHash;
+
+	// Create a test object with a radius
+	TestObject obj1{1, "Object1"};
+
+	// The location should be near a corner of the bucket so that inserting it with a radius
+	// will place it in multiple buckets
+	const auto keys = locationHash.add(&obj1, {15.0f, 15.0f}, 4.0f);
+
+	// Query and ensure coordinates are present in multiple buckets
+	ASSERT_EQ(keys.size(), 4);
+	const auto & data = locationHash.get_data();
+	for (const auto & key : keys) {
+		const auto it = data.find(key);
+		ASSERT_NE(it, data.end());
+		ASSERT_EQ(it->second.size(), 1);
+		EXPECT_EQ(it->second[0].second, &obj1);
+	}
+	ASSERT_EQ(keys[0].quantized_[0], 0);
+	ASSERT_EQ(keys[0].quantized_[1], 0);
+	ASSERT_EQ(keys[1].quantized_[0], 16);
+	ASSERT_EQ(keys[1].quantized_[1], 0);
+	ASSERT_EQ(keys[2].quantized_[0], 0);
+	ASSERT_EQ(keys[2].quantized_[1], 16);
+	ASSERT_EQ(keys[3].quantized_[0], 16);
+	ASSERT_EQ(keys[3].quantized_[1], 16);
+
+	// move with radius
+	const auto movedKeys = locationHash.move(&obj1, 4.0f, {15.0f, 15.0f}, {21.0f, 21.0f});
+	ASSERT_EQ(movedKeys.size(), 1);
+
+	// cover the "zero move" case
+	const auto zeroMovedKeys = locationHash.move(&obj1, 4.0f, {21.0f, 21.0f}, {21.0f, 21.0f});
+	ASSERT_EQ(zeroMovedKeys.size(), 1); // fast return existing keys
+}
+
 // ----------------------------------------------------------------------------

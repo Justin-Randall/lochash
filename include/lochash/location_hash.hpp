@@ -31,10 +31,11 @@ namespace lochash
 		static constexpr size_t dimension_count = Dimensions;
 		using CoordinateArray                   = std::array<CoordinateType, Dimensions>;
 		using BucketContent                     = std::vector<std::pair<CoordinateArray, ObjectType *>>;
-		using CoordinateMap =
-		    std::unordered_map<QuantizedCoordinate<Precision, CoordinateType, Dimensions>, BucketContent>;
+		using CoordinateMap                     = std::unordered_map<
+            QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>, BucketContent>;
 
-		using QuantizedCoordinateType = QuantizedCoordinate<Precision, CoordinateType, Dimensions>;
+		using QuantizedCoordinateType =
+		    QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>;
 
 		/**
 		 * Adds coordinates and optionally an associated object pointer to the appropriate bucket.

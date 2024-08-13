@@ -3,7 +3,15 @@
 
 #include <array>
 #include <functional>
+#include <immintrin.h>
 #include <vector>
+
+// Check if we're on an x86-64 platform with SSE2 support
+#if defined(_M_X64) || defined(__x86_64__)
+#define USE_SIMD 1
+#else
+#define USE_SIMD 0
+#endif
 
 namespace lochash
 {
@@ -43,12 +51,79 @@ namespace lochash
 		 */
 		bool operator==(const QuantizedCoordinate & other) const
 		{
+#if USE_SIMD // Really annoying that compilers do not already emit this code, but also understandable
+			if constexpr (Dimensions == 1) {
+				return quantized_[0] == other.quantized_[0];
+			} else if constexpr (Dimensions == 2) {
+				if constexpr (sizeof(QuantizedCoordinateIntegerType) == 8) {
+					__m128i val1 = _mm_set_epi64x(quantized_[1], quantized_[0]);
+					__m128i val2 = _mm_set_epi64x(other.quantized_[1], other.quantized_[0]);
+					return _mm_testc_si128(_mm_cmpeq_epi64(val1, val2), _mm_set1_epi64x(-1));
+				} else if constexpr (sizeof(QuantizedCoordinateIntegerType) == 4) {
+					__m128i val1 = _mm_set_epi32(quantized_[1], quantized_[0], 0, 0);
+					__m128i val2 = _mm_set_epi32(other.quantized_[1], other.quantized_[0], 0, 0);
+					return _mm_testc_si128(_mm_cmpeq_epi32(val1, val2), _mm_set1_epi32(-1));
+				} else {
+					for (size_t i = 0; i < Dimensions; ++i) {
+						if (quantized_[i] != other.quantized_[i]) {
+							return false;
+						}
+					}
+					return true;
+				}
+			} else if constexpr (Dimensions == 3) {
+				if constexpr (sizeof(QuantizedCoordinateIntegerType) == 8) {
+					__m256i val1 = _mm256_set_epi64x(0, quantized_[2], quantized_[1], quantized_[0]);
+					__m256i val2 = _mm256_set_epi64x(0, other.quantized_[2], other.quantized_[1], other.quantized_[0]);
+					return _mm256_testc_si256(_mm256_cmpeq_epi64(val1, val2), _mm256_set1_epi64x(-1));
+				} else if constexpr (sizeof(QuantizedCoordinateIntegerType) == 4) {
+					__m128i val1 = _mm_set_epi32(0, quantized_[2], quantized_[1], quantized_[0]);
+					__m128i val2 = _mm_set_epi32(0, other.quantized_[2], other.quantized_[1], other.quantized_[0]);
+					return _mm_testc_si128(_mm_cmpeq_epi32(val1, val2), _mm_set1_epi32(-1));
+				} else {
+					for (size_t i = 0; i < Dimensions; ++i) {
+						if (quantized_[i] != other.quantized_[i]) {
+							return false;
+						}
+					}
+					return true;
+				}
+			} else if constexpr (Dimensions == 4) {
+				if constexpr (sizeof(QuantizedCoordinateIntegerType) == 8) {
+					__m256i val1 = _mm256_set_epi64x(quantized_[3], quantized_[2], quantized_[1], quantized_[0]);
+					__m256i val2 = _mm256_set_epi64x(other.quantized_[3], other.quantized_[2], other.quantized_[1],
+					                                 other.quantized_[0]);
+					return _mm256_testc_si256(_mm256_cmpeq_epi64(val1, val2), _mm256_set1_epi64x(-1));
+				} else if constexpr (sizeof(QuantizedCoordinateIntegerType) == 4) {
+					__m128i val1 = _mm_set_epi32(quantized_[3], quantized_[2], quantized_[1], quantized_[0]);
+					__m128i val2 = _mm_set_epi32(other.quantized_[3], other.quantized_[2], other.quantized_[1],
+					                             other.quantized_[0]);
+					return _mm_testc_si128(_mm_cmpeq_epi32(val1, val2), _mm_set1_epi32(-1));
+				} else {
+					for (size_t i = 0; i < Dimensions; ++i) {
+						if (quantized_[i] != other.quantized_[i]) {
+							return false;
+						}
+					}
+					return true;
+				}
+			} else {
+				for (size_t i = 0; i < Dimensions; ++i) {
+					if (quantized_[i] != other.quantized_[i]) {
+						return false;
+					}
+				}
+				return true;
+			}
+#else
+			// Old way that works, but is slower
 			for (size_t i = 0; i < Dimensions; ++i) {
 				if (quantized_[i] != other.quantized_[i]) {
 					return false;
 				}
 			}
 			return true;
+#endif
 		}
 
 		/**
@@ -118,9 +193,10 @@ namespace lochash
 		static_assert(std::is_arithmetic<CoordinateType>::value, "CoordinateType must be an arithmetic type.");
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
 
-		std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions>> quantized_coords;
-		std::array<size_t, Dimensions>                                          steps;
-		constexpr size_t precision_shift = calculate_precision_shift<Precision>();
+		std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>>
+		                               quantized_coords;
+		std::array<size_t, Dimensions> steps;
+		constexpr size_t               precision_shift = calculate_precision_shift<Precision>();
 
 		// Calculate the number of steps required for each dimension
 		size_t total_steps = 1;

@@ -139,6 +139,7 @@ TEST(GenerateAllHashKeysWithinDistanceTest, PrecisionIsPowerOfTwo)
 	std::array<int, 1> center    = {0}; // Single dimension array for simplicity
 	int                radius    = 1;
 	auto               result = generate_all_quantized_coordinates_within_distance<precision, int, 1>(center, radius);
+	auto result32 = generate_all_quantized_coordinates_within_distance<precision, int, 1, int32_t>(center, radius);
 	// No need for runtime assertion here, compilation success is the test
 }
 
