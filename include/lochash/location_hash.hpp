@@ -20,7 +20,8 @@ namespace lochash
 	 *
 	 * @see https://github.com/Justin-Randall/lochash/blob/main/README.md
 	 */
-	template <size_t Precision, typename CoordinateType, size_t Dimensions, typename ObjectType = void>
+	template <size_t Precision, typename CoordinateType, size_t Dimensions, typename ObjectType = void,
+	          typename QuantizedCoordinateIntegerType = int64_t>
 	class LocationHash
 	{
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
@@ -62,8 +63,9 @@ namespace lochash
 		                                         CoordinateType radius)
 		{
 			// generate keys for all the buckets within the radius
-			auto keys = generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions>(
-			    coordinates, radius);
+			auto keys =
+			    generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions,
+			                                                       QuantizedCoordinateIntegerType>(coordinates, radius);
 			for (auto key : keys) {
 				data_[key].emplace_back(coordinates, object);
 			}
@@ -153,8 +155,9 @@ namespace lochash
 
 		bool remove(ObjectType * object, const CoordinateArray & coordinates, const CoordinateType radius)
 		{
-			auto keys = generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions>(
-			    coordinates, radius);
+			auto keys =
+			    generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions,
+			                                                       QuantizedCoordinateIntegerType>(coordinates, radius);
 			bool removed = false;
 			for (auto key : keys) {
 				const auto it = data_.find(key);
@@ -222,7 +225,8 @@ namespace lochash
 		{
 			// early out if coordinates are the same
 			if (coordinates_match(old_coordinates, new_coordinates)) {
-				return generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions>(
+				return generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions,
+				                                                          QuantizedCoordinateIntegerType>(
 				    old_coordinates, radius);
 			}
 

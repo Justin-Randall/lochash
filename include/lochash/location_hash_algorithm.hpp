@@ -22,8 +22,8 @@ namespace lochash
 	 * @param value The value to quantize.
 	 * @return The quantized value.
 	 */
-	template <typename T, size_t Precision>
-	constexpr ssize_t quantize_value(T value)
+	template <typename T, size_t Precision, typename QuantizedCoordinateIntegerType = int64_t>
+	constexpr QuantizedCoordinateIntegerType quantize_value(T value)
 	{
 		static_assert(std::is_arithmetic<T>::value, "Only arithmetic types are supported");
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
@@ -33,7 +33,13 @@ namespace lochash
 		// bitwise operations are generally faster and have lower latency in modern CPUs.
 		// Division and modulo operations typically take multiple CPU cycles to complete,
 		// whereas bitwise operations usually execute in a single cycle.
-		return static_cast<size_t>(value) & ~(Precision - 1);
+		//
+		// TODO : the built-in std::round or casting to it may not be the fastest way
+		//  to quantize the coordinates. Consider using a faster method. SSE or AVX allow
+		//  for parallel operations on multiple values, not be as slow as built-in implementations
+		//  and may deal with floating point state and precision which could be faster than the
+		//  current method.
+		return static_cast<QuantizedCoordinateIntegerType>(value) & ~(Precision - 1);
 	}
 
 	/**

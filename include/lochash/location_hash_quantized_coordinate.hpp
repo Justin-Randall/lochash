@@ -1,7 +1,6 @@
 #ifndef _INCLUDED_location_hash_quantized_coordinate_hpp
 #define _INCLUDED_location_hash_quantized_coordinate_hpp
 
-#include "location_hash_types.hpp"
 #include <array>
 #include <functional>
 #include <vector>
@@ -18,7 +17,8 @@ namespace lochash
 	 * @tparam CoordinateType
 	 * @tparam Dimensions
 	 */
-	template <size_t Precision, typename CoordinateType, size_t Dimensions>
+	template <size_t Precision, typename CoordinateType, size_t Dimensions,
+	          typename QuantizedCoordinateIntegerType = int64_t>
 	struct QuantizedCoordinate {
 
 		/**
@@ -29,12 +29,8 @@ namespace lochash
 		QuantizedCoordinate(const std::array<CoordinateType, Dimensions> & coordinates)
 		{
 			for (size_t i = 0; i < Dimensions; ++i) {
-				// TODO : the built-in std::round or casting to it may not be the fastest way
-				//  to quantize the coordinates. Consider using a faster method. SSE or AVX allow
-				//  for parallel operations on multiple values, not be as slow as built-in implementations
-				//  and may deal with floating point state and precision which could be faster than the
-				//  current method.
-				quantized_[i] = quantize_value<CoordinateType, Precision>(coordinates[i]);
+				quantized_[i] =
+				    quantize_value<CoordinateType, Precision, QuantizedCoordinateIntegerType>(coordinates[i]);
 			}
 		}
 
@@ -80,9 +76,10 @@ namespace lochash
 
 namespace std
 {
-	template <size_t Precision, typename CoordinateType, size_t Dimensions>
-	struct hash<lochash::QuantizedCoordinate<Precision, CoordinateType, Dimensions>> {
-		size_t operator()(const lochash::QuantizedCoordinate<Precision, CoordinateType, Dimensions> & qc) const
+	template <size_t Precision, typename CoordinateType, size_t Dimensions, typename QuantizedCoordinateIntegerType>
+	struct hash<lochash::QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>> {
+		size_t operator()(const lochash::QuantizedCoordinate<Precision, CoordinateType, Dimensions,
+		                                                     QuantizedCoordinateIntegerType> & qc) const
 		{
 			size_t seed = 0;
 			for (size_t i = 0; i < Dimensions; ++i) {
@@ -112,8 +109,9 @@ namespace lochash
 	 * @param max_coords
 	 * @return std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions>>
 	 */
-	template <size_t Precision, typename CoordinateType, size_t Dimensions>
-	std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions>>
+	template <size_t Precision, typename CoordinateType, size_t Dimensions,
+	          typename QuantizedCoordinateIntegerType = int64_t>
+	std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>>
 	generate_all_quantized_coordinates_within_range(const std::array<CoordinateType, Dimensions> & min_coords,
 	                                                const std::array<CoordinateType, Dimensions> & max_coords)
 	{
@@ -127,8 +125,8 @@ namespace lochash
 		// Calculate the number of steps required for each dimension
 		size_t total_steps = 1;
 		for (size_t i = 0; i < Dimensions; ++i) {
-			steps[i] = ((quantize_value<CoordinateType, Precision>(max_coords[i]) -
-			             quantize_value<CoordinateType, Precision>(min_coords[i])) >>
+			steps[i] = ((quantize_value<CoordinateType, Precision, QuantizedCoordinateIntegerType>(max_coords[i]) -
+			             quantize_value<CoordinateType, Precision, QuantizedCoordinateIntegerType>(min_coords[i])) >>
 			            precision_shift) +
 			           1;
 			total_steps *= steps[i];
@@ -176,8 +174,9 @@ namespace lochash
 	 * @param radius
 	 * @return std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions>>
 	 */
-	template <size_t Precision, typename CoordinateType, size_t Dimensions>
-	std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions>>
+	template <size_t Precision, typename CoordinateType, size_t Dimensions,
+	          typename QuantizedCoordinateIntegerType = int64_t>
+	std::vector<QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>>
 	generate_all_quantized_coordinates_within_distance(const std::array<CoordinateType, Dimensions> & center,
 	                                                   CoordinateType                                 radius)
 	{
@@ -191,8 +190,9 @@ namespace lochash
 			lower_bounds[i] = center[i] - radius;
 			upper_bounds[i] = center[i] + radius;
 		}
-		return generate_all_quantized_coordinates_within_range<Precision, CoordinateType, Dimensions>(lower_bounds,
-		                                                                                              upper_bounds);
+		return generate_all_quantized_coordinates_within_range<Precision, CoordinateType, Dimensions,
+		                                                       QuantizedCoordinateIntegerType>(lower_bounds,
+		                                                                                       upper_bounds);
 	}
 } // namespace lochash
 
