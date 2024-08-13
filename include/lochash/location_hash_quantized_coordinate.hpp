@@ -125,12 +125,17 @@ namespace lochash
 		constexpr size_t precision_shift = calculate_precision_shift<Precision>();
 
 		// Calculate the number of steps required for each dimension
+		size_t total_steps = 1;
 		for (size_t i = 0; i < Dimensions; ++i) {
 			steps[i] = ((quantize_value<CoordinateType, Precision>(max_coords[i]) -
 			             quantize_value<CoordinateType, Precision>(min_coords[i])) >>
 			            precision_shift) +
 			           1;
+			total_steps *= steps[i];
 		}
+
+		// reserve space in the vector to avoid reallocations
+		quantized_coords.reserve(total_steps);
 
 		std::array<size_t, Dimensions> indices = {0};
 		bool                           done    = false;
