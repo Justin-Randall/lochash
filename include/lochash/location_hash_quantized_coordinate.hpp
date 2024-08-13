@@ -3,11 +3,11 @@
 
 #include <array>
 #include <functional>
-#include <immintrin.h>
 #include <vector>
 
 // Check if we're on an x86-64 platform with SSE2 support
-#if defined(_M_X64) || defined(__x86_64__)
+#if defined(_M_X64) || defined(__x86_64__) || defined(__AVX2__) || defined(__SSE4_2__)
+#include <immintrin.h>
 #define USE_SIMD 1
 #else
 #define USE_SIMD 0
