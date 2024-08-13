@@ -45,7 +45,7 @@ TEST(QuantizeValueTest, QuantizesFloatingPointCorrectly)
 	constexpr double  value     = 10.75;
 	constexpr size_t  precision = 4;
 	constexpr ssize_t expected  = 8; // 10.75 quantized to nearest lower multiple of 4 is 8
-	constexpr auto    result    = quantize_value<double, precision>(value);
+	auto              result    = quantize_value<double, precision>(value);
 	EXPECT_EQ(result, expected);
 }
 

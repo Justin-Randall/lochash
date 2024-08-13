@@ -1,6 +1,7 @@
 #ifndef _INCLUDED_location_hash_algorithm_hpp
 #define _INCLUDED_location_hash_algorithm_hpp
 
+#include "real_to_int.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -39,7 +40,10 @@ namespace lochash
 		//  for parallel operations on multiple values, not be as slow as built-in implementations
 		//  and may deal with floating point state and precision which could be faster than the
 		//  current method.
-		return static_cast<QuantizedCoordinateIntegerType>(value) & ~(Precision - 1);
+		QuantizedCoordinateIntegerType quantized_value = real_to_int<T, QuantizedCoordinateIntegerType>(value);
+		quantized_value                                = quantized_value & ~(Precision - 1);
+		// return static_cast<QuantizedCoordinateIntegerType>(value) & ~(Precision - 1);
+		return quantized_value;
 	}
 
 	/**
