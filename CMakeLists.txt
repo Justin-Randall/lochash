@@ -20,4 +20,12 @@ include_directories("${gtest_SOURCE_DIR}/include"
     "${PROJECT_SOURCE_DIR}/include"
 )
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx -msse4.2 -mfpmath=sse")
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -mfpmath=sse")
+endif()
+
 add_subdirectory(tests)
