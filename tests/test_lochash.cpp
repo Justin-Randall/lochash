@@ -234,6 +234,10 @@ TEST(LocationHashTest, AddObjectWithRadius)
 	// cover the "zero move" case
 	const auto zeroMovedKeys = locationHash.move(&obj1, 4.0f, {21.0f, 21.0f}, {21.0f, 21.0f});
 	ASSERT_EQ(zeroMovedKeys.size(), 1); // fast return existing keys
+
+	// cover the "small move" case
+	const auto smallMovedKeys = locationHash.move(&obj1, 4.0f, {21.0f, 21.0f}, {21.1f, 21.1f});
+	ASSERT_EQ(smallMovedKeys.size(), 1); // fast return existing keys
 }
 
 TEST(LocationHashTest, AddObjectWithRadius32)

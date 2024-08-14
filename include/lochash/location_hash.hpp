@@ -224,15 +224,27 @@ namespace lochash
 		                                          const CoordinateArray & old_coordinates,
 		                                          const CoordinateArray & new_coordinates)
 		{
-			// early out if coordinates are the same
-			if (coordinates_match(old_coordinates, new_coordinates)) {
+			if (buckets_match(old_coordinates, new_coordinates)) {
+				if (!coordinates_match(old_coordinates, new_coordinates)) {
+					// update the bucket content with new coordinates
+					auto it = data_.find(QuantizedCoordinateType(old_coordinates));
+					if (it != data_.end()) {
+						auto & bucket = it->second;
+						for (auto & [coords, obj] : bucket) {
+							if (obj == object) {
+								coords = new_coordinates;
+							}
+						}
+					}
+				}
+
 				return generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions,
 				                                                          QuantizedCoordinateIntegerType>(
 				    old_coordinates, radius);
 			}
 
 			remove(object, old_coordinates, radius);
-			auto keys = add(object, new_coordinates, radius);
+			auto keys = add(object, new_coordinates, radius); // TODO : this is the hot spot
 			return keys;
 		}
 
