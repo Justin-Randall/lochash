@@ -67,6 +67,7 @@ namespace lochash
 			auto keys =
 			    generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions,
 			                                                       QuantizedCoordinateIntegerType>(coordinates, radius);
+
 			for (auto key : keys) {
 				data_[key].emplace_back(coordinates, object);
 			}
@@ -154,6 +155,14 @@ namespace lochash
 			return false;
 		}
 
+		/**
+		 * Removes a coordinate and optionally an associated object from the appropriate buckets.
+		 *
+		 * @param object Pointer to the associated object.
+		 * @param coordinates Array of coordinate inputs.
+		 * @param radius The radius of the bucket.
+		 * @return True if an item was removed, false otherwise.
+		 */
 		bool remove(ObjectType * object, const CoordinateArray & coordinates, const CoordinateType radius)
 		{
 			auto keys =
@@ -178,6 +187,7 @@ namespace lochash
 			}
 			return removed;
 		}
+
 		/**
 		 * Moves a coordinate and optionally an associated object from one bucket to another.
 		 *
@@ -201,9 +211,9 @@ namespace lochash
 		/**
 		 * @brief Moves a coordinate and optionally an associated object from one bucket to another.
 		 *
-		 * @param object
-		 * @param old_coordinates
-		 * @param new_coordinates
+		 * @param object Pointer to the associated object.
+		 * @param old_coordinates Array of coordinate inputs for the current location.
+		 * @param new_coordinates Array of coordinate inputs for the new location.
 		 * @return true
 		 * @return false
 		 */
@@ -220,11 +230,24 @@ namespace lochash
 			return false;
 		}
 
+		/**
+		 * @brief Moves an object. Updates buckets it may be in. Adds new buckets if the radius
+		 * 	  of the object's edge extends into new buckets and removes itself from old buckts if
+		 * 	  the object's edge no longer extends into them.
+		 *
+		 * @param object Pointer to the associated object.
+		 * @param radius The radius of the object.
+		 * @param old_coordinates The old coordinates of the object.
+		 * @param new_coordinates The new coordinates of the object.
+		 * @return std::vector<QuantizedCoordinateType>
+		 */
 		std::vector<QuantizedCoordinateType> move(ObjectType * object, const CoordinateType & radius,
 		                                          const CoordinateArray & old_coordinates,
 		                                          const CoordinateArray & new_coordinates)
 		{
-			// early out if coordinates are the same
+			// from the top down: find early-out opportunities that spend less time
+
+			// if the coordinates are the same, we don't need to do anything
 			if (coordinates_match(old_coordinates, new_coordinates)) {
 				return generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions,
 				                                                          QuantizedCoordinateIntegerType>(
@@ -273,6 +296,8 @@ namespace lochash
 	  private:
 		bool buckets_match(const CoordinateArray & coords1, const CoordinateArray & coords2) const
 		{
+			// Keep in mind that these are quantized coordinates. The coordinate arrays can be different
+			// but the quantized coordinates can be the same and point to the same bucket.
 			const auto old_coordinates = QuantizedCoordinate<Precision, CoordinateType, Dimensions>(coords1);
 			const auto new_coordinates = QuantizedCoordinate<Precision, CoordinateType, Dimensions>(coords2);
 			if (old_coordinates == new_coordinates) {
@@ -283,6 +308,8 @@ namespace lochash
 
 		bool coordinates_match(const CoordinateArray & coords1, const CoordinateArray & coords2) const
 		{
+			// This has not turned up in profiling as a bottleneck, but it could be optimized
+			// using SIMD instructions or other techniques.
 			for (size_t i = 0; i < Dimensions; ++i) {
 				if constexpr (std::is_floating_point<CoordinateType>::value) {
 					if (std::fabs(coords1[i] - coords2[i]) > std::numeric_limits<CoordinateType>::epsilon()) {
