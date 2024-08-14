@@ -32,7 +32,7 @@ namespace lochash
 		using CoordinateArray                   = std::array<CoordinateType, Dimensions>;
 		using BucketContent                     = std::vector<std::pair<CoordinateArray, ObjectType *>>;
 		using CoordinateMap                     = std::unordered_map<
-		                        QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>, BucketContent>;
+            QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>, BucketContent>;
 
 		using QuantizedCoordinateType =
 		    QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>;
@@ -231,6 +231,27 @@ namespace lochash
 				    old_coordinates, radius);
 			}
 
+			// see if the keys and buckets are the same
+			QuantizedCoordinate q_old = QuantizedCoordinate<Precision, CoordinateType, Dimensions>(old_coordinates);
+			QuantizedCoordinate q_new = QuantizedCoordinate<Precision, CoordinateType, Dimensions>(new_coordinates);
+			if (q_old == q_new) {
+				// same buckets, but the new coordinates may include new buckets and exclude others.
+				// First make a quick calculation to see if the new buckets are the same as the old buckets.
+				// If they match, there is no need to mutate the data structure.
+				const auto newBuckets =
+				    generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions,
+				                                                       QuantizedCoordinateIntegerType>(new_coordinates,
+				                                                                                       radius);
+				const auto oldBuckets =
+				    generate_all_quantized_coordinates_within_distance<Precision, CoordinateType, Dimensions,
+				                                                       QuantizedCoordinateIntegerType>(old_coordinates,
+				                                                                                       radius);
+				if (newBuckets == oldBuckets) {
+					return newBuckets;
+				}
+			}
+
+			// less expensive early-outs failed, so we need to actually move the object
 			remove(object, old_coordinates, radius);
 			auto keys = add(object, new_coordinates, radius);
 			return keys;
