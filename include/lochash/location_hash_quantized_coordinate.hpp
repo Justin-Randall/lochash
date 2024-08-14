@@ -1,6 +1,14 @@
 #ifndef _INCLUDED_location_hash_quantized_coordinate_hpp
 #define _INCLUDED_location_hash_quantized_coordinate_hpp
 
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#endif
+
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#endif
+
 #include <array>
 #include <functional>
 #include <vector>
@@ -12,6 +20,8 @@
 #else
 #define USE_SIMD 0
 #endif
+
+#include "location_hash_algorithm.hpp"
 
 namespace lochash
 {
