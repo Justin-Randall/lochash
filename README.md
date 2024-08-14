@@ -3,7 +3,13 @@
 ![Build Status](https://github.com/Justin-Randall/lochash/actions/workflows/cmake-multi-platform.yml/badge.svg)
 [![codecov](https://codecov.io/gh/Justin-Randall/lochash/graph/badge.svg?token=IYN1GQM2NY)](https://codecov.io/gh/Justin-Randall/lochash)
 
-LocHash is an *n*-dimensional location hash spatial database.
+LocHash is an *n*-dimensional location hash spatial database. This is not a novel concept, but not often utlized.
+
+(Personal note from author): A fantastic coder (now another grey-beard, and I have asked permission to share his name here in the README) introduced me to this decades ago for optimizing SQL databases to produce shockingly fast queries based on vector-specified proximity. He was decades ahead of our peers in game dev and it is strange that Google and non-gaming firms leverage this algorithm for dealing with real-world users at scale (Ride Sharing, USGS data analyis, AI and machine learning).
+
+It also applies very well for server-side, web-scale distributed processing and message routing, which is where I have frequently leveraged the concept to address $O(n^2)$ interactions that absolutely wreck shipping product in the face of the "rich man's" problem of too many customers.
+
+This is the best representation I have (at the moment) of the principle concept behind vector hashing and quantized proximity to bucket potentially relevant values together into an amortized, constant-time look-up for relavent data.
 
 ## Purpose
 
@@ -11,19 +17,19 @@ There are a number of popular spatial database algorithms, from quad-trees and b
 
 ## Design
 
-The underlying design is elegantly simple. Coordinates are first quantized to native word-size, fixed-point integers. The quantization is opinionated and requires a power of 2 step (1, 2, 4, 8, 16, 32, 64 ...) to utilize shift operations to use a single CPU cycle rather than 29 or more for modulo/division operations.
+The underlying design is elegantly simple. Coordinates are first quantized to fixed-point integers. The quantization is opinionated and requires a power of 2 step (1, 2, 4, 8, 16, 32, 64 ...) to utilize shift operations to use a single CPU cycle rather than 29 or more instructions for modulo/division operations.
 
 The storage algorighm utilizes an amortized-constant time unordered map for lookups, insertions and removals. It is optimized for reads and inserts. The implementation uses an std::unordered_map to allow for custom allocators (say, a stack allocation strategy to avoid slower heap and locking, if it all fits ... or a small-block allocator for fixed-size, etc.).
 
 This fits especially well with distributed, back-end mapping, where individual buckets may be associated with event-streaming channels across multiple servers at web-scale so that millions or billions of objects that may potentially interact are localized to a processor by location. Clients (and servers) can make a very fast calculation to determine which broadcast channels to subscribe to.
 
-It also works very well in standalone clients that have millions of objects instantiated, but need to cull potential interactions to other objects in the immediate vacinity -- so a range query returns a handful of buckets, at most, with a few objects in each, reducing the number of precision queries required for things like collision detection or other interactions.
+It also works very well in standalone clients that have lots of objects instantiated, but need to cull potential interactions to other objects in the immediate vicinity -- so a range query returns a handful of buckets, at most, with a few objects in each, reducing the number of precision queries required for things like collision detection or other interactions.
 
-The use of templates also allows for recursive location databases. 2 or 3 amortized constant-time lookups can handle enormous query spaces. Objects within a few meters may be on a leaf, with the leaf database handling several hundred thousand kilometers, and a parent handling several hundred thousand more of those leaf nodes, etc....
+Recursive location databases are also on the menu. 2 or 3 amortized constant-time lookups can handle enormous query spaces. Objects within a few meters may be on a leaf, with the leaf database handling several kilometers, and a parent handling several hundred thousand more of those leaf nodes, etc....
 
 Another advantage of type templating allows integration with other applications. For example, a 3-float coordinate location hash used with UnrealEngine can easily provide a nice helper to convert FVec3 to the triple-float coordinate tuples used by the LocationHash database.
 
-The algorithm quantizes coordinates, first converting to native word size (size_t) if they are floating point, then removes precision by some power of 2 before calculating a hash.
+The algorithm quantizes coordinates, first converting to integrals if they are floating point (there are SSE2/SIMD assembly optimizations in place already), then removes precision by some power of 2 before calculating a hash.
 
 So, given a precision of 16 and 3 objects:
 
