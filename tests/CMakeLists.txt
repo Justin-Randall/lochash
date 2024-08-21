@@ -109,7 +109,7 @@ elseif(GCOV_BINARY AND LCOV_BINARY AND GENHTML_BINARY AND GCOVR_BINARY)
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage
     COMMAND ${TEST_COMMAND_LINE_OPTIONS}
     COMMAND ${CMAKE_COMMAND} -E sleep 1 # Ensure test execution completes
-    COMMAND ${LCOV_BINARY} --capture --directory ${CMAKE_BINARY_DIR} --output-file ${CMAKE_BINARY_DIR}/coverage/lcov.info
+    COMMAND ${LCOV_BINARY} --capture --directory ${CMAKE_BINARY_DIR} --output-file ${CMAKE_BINARY_DIR}/coverage/lcov.info --ignore-errors mismatch,mismatch --rc geninfo_unexecuted_blocks=1
     COMMAND ${LCOV_BINARY} --remove ${CMAKE_BINARY_DIR}/coverage/lcov.info '/usr/*' --output-file ${CMAKE_BINARY_DIR}/coverage/lcov.info
     COMMAND ${LCOV_BINARY} --remove ${CMAKE_BINARY_DIR}/coverage/lcov.info '*/build/*' --output-file ${CMAKE_BINARY_DIR}/coverage/lcov.info
     COMMAND ${LCOV_BINARY} --list ${CMAKE_BINARY_DIR}/coverage/lcov.info
