@@ -76,6 +76,8 @@ Grid Representation of Buckets:
 
 Of course, the location hash only allocates space where locations are added.
 
+[![YouTube](http://i.ytimg.com/vi/5gttK_MYwz4/hqdefault.jpg)](https://www.youtube.com/watch?v=5gttK_MYwz4)
+
 ## Implementation
 
 The implementation relies heavily on the C++ standard library with modern features. Compiler upgrades for optimizations and features come freely. The generated code is already well-optimized, though performance analysis found some slow conversions, so there is optimized assembly for SSE2 or whatever is available on the target platform.
