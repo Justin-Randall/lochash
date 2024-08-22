@@ -5,11 +5,9 @@
 
 LocHash is an *n*-dimensional location hash spatial database. This is not a novel concept, but not often utlized.
 
-(Personal note from author): A fantastic coder (now another grey-beard, and I have asked permission to share his name here in the README) introduced me to this decades ago for optimizing SQL databases to produce shockingly fast queries based on vector-specified proximity. He was decades ahead of our peers in game dev and it is strange that Google and non-gaming firms leverage this algorithm for dealing with real-world users at scale (Ride Sharing, USGS data analyis, AI and machine learning).
+(Personal note from the author): A fantastic coder, [Calan Thurow](https://www.linkedin.com/in/calan-thurow/), introduced me to this decades ago for optimizing SQL databases to produce shockingly fast queries based on vector-specified proximity. He was decades ahead of our peers in game development. This algorithm applies very well to server-side, web-scale distributed processing, and message routing, where I have frequently leveraged the concept to address $O(n^2)$ interactions that absolutely wreck shipping products when faced with the "rich man's" problem of too many customers.
 
-It also applies very well for server-side, web-scale distributed processing and message routing, which is where I have frequently leveraged the concept to address $O(n^2)$ interactions that absolutely wreck shipping product in the face of the "rich man's" problem of too many customers.
-
-This is the best representation I have (at the moment) of the principle concept behind vector hashing and quantized proximity to bucket potentially relevant values together into an amortized, constant-time look-up for relavent data.
+This implementation is illustrative and by no means perfect. It still relies on std::unordered_map under the hood when there are other implementations that may be faster. Contributions via PRs are welcome!
 
 ## Purpose
 
@@ -17,7 +15,7 @@ There are a number of popular spatial database algorithms, from quad-trees and b
 
 ## Design
 
-The underlying design is elegantly simple. Coordinates are first quantized to fixed-point integers. The quantization is opinionated and requires a power of 2 step (1, 2, 4, 8, 16, 32, 64 ...) to utilize shift operations to use a single CPU cycle rather than 29 or more instructions for modulo/division operations.
+The underlying design is elegantly simple. Coordinates are first quantized to fixed-point integers. The quantization is opinionated and requires a power of 2 step (1, 2, 4, 8, 16, 32, 64 ...) to utilize shift operations, which use a single CPU cycle rather than 29 or more instructions for modulo/division operations.
 
 The storage algorighm utilizes an amortized-constant time unordered map for lookups, insertions and removals. It is optimized for reads and inserts. The implementation uses an std::unordered_map to allow for custom allocators (say, a stack allocation strategy to avoid slower heap and locking, if it all fits ... or a small-block allocator for fixed-size, etc.).
 
@@ -80,16 +78,69 @@ Of course, the location hash only allocates space where locations are added.
 
 ## Implementation
 
-The implementation relies heavily on the C++ standard library with modern features. Compiler upgrades for optimizations and features come freely. The generated code is already well optimized. Drop-in standard library replacements for fine-tuned for specific applications, such as gaming or AI, should work if they are API compliant.
+The implementation relies heavily on the C++ standard library with modern features. Compiler upgrades for optimizations and features come freely. The generated code is already well-optimized, though performance analysis found some slow conversions, so there is optimized assembly for SSE2 or whatever is available on the target platform.
+
+For example, this library does a LOT of floating point conversion, and even modern compilers generate pretty slow output, so there is an float to integer conversion optimization:
+
+```cpp
+template <typename RealType, typename IntType>
+inline constexpr IntType real_to_int(RealType value)
+{
+ static_assert(std::is_integral_v<IntType>, "IntType must be an integral type.");
+
+#if USE_SIMD
+ if constexpr (std::is_floating_point_v<RealType>) {
+  if constexpr (std::is_same_v<RealType, float>) {
+   if constexpr (sizeof(IntType) == 4) {
+    // Convert float to int32 using SSE
+    __m128 val = _mm_set_ss(value); // Load the float into an SSE register
+    return _mm_cvtss_si32(val);     // Convert it to int32
+   } else {
+    // Convert float to int32 using SSE, then cast to smaller or larger type
+    __m128  val  = _mm_set_ss(value);
+    int32_t temp = _mm_cvtss_si32(val);
+    return static_cast<IntType>(temp); // Truncate or extend to other integer sizes
+   }
+  } else if constexpr (std::is_same_v<RealType, double>) {
+   if constexpr (sizeof(IntType) == 4) {
+    // Convert double to int32 using SSE2
+    __m128d val = _mm_set_sd(value); // Load the double into an SSE2 register
+    return _mm_cvtsd_si32(val);      // Convert it to int32
+   } else if constexpr (sizeof(IntType) == 8) {
+    // Convert double to int64 using SSE2
+    return _mm_cvtsd_si64(_mm_set_sd(value));
+   } else {
+    // Convert double to int32 using SSE2, then cast to smaller or larger type
+    __m128d val  = _mm_set_sd(value);
+    int32_t temp = _mm_cvtsd_si32(val);
+    return static_cast<IntType>(temp); // Truncate or extend to other integer sizes
+   }
+  }
+ } else if constexpr (std::is_integral_v<RealType>) {
+  // If RealType is already an integer, simply cast it to the desired IntType
+  return static_cast<IntType>(value);
+ }
+#else
+ // Fallback for non-x86/x86-64 platforms or those without SSE2 support
+ return static_cast<IntType>(value);
+#endif
+}
+```
+
+There are similar optimizations for equality comparison operations. These used to turn up in performance analysis (perf, Intel's VTune) and are no longer hot-spots. Most optimizations when using it are really about client code reducing call counts.
+
+Drop-in standard library replacements fine-tuned for specific applications, such as gaming or AI, should work if they are API compliant (allocators, hash functions based on special knowledge of the data being used, etc...).
 
 There is liberal use of static_assert<> to unsnarl the worst of compiler errors with template instantiation output to direct users away from improper usage (things like mixing types for coordinates, for example).
 
+Also note that it has a decent test suite with coverage reporting. If coverage falls below 98%, the build breaks. It is based on [tdd-cmake-template](https://github.com/Justin-Randall/tdd-cmake-template), another project that may be of use for C++ coders starting new projects using TDD and CMake.
+
 ## Other Uses
 
-This *n-dimensional* database is also well-suited for semantic maps or many other applications where various coordinates can aggregate to co-locate datapoints on proximity. For example, matchmaking players on similar traits: their skill on an X axis, their ping on a Y axis, their community rating on a Z axis and maybe throw others in such as "community engagement" on a W axis ... and so on, and so on.
+This *n-dimensional* database is also well-suited for semantic maps or many other applications where various coordinates can aggregate to co-locate datapoints on proximity. For example, matchmaking players on similar traits: their skill on an X axis, their ping on a Y axis, their community rating on a Z axis and maybe throw others in such as "community engagement" on a W axis. Since it is *n*-dimensional, it can supplement semantic mapping along various axes. For example, an AI vector database for images can query on some dimension of "dog-ness vs cat-ness" or other traits that emerge in a model, often without understanding which groupings emerge from training. Modern AI can have dozens or hundreds of dimensions in the data, and it is merely a compile-time parameter for this implementation.
 
 ## Caveat
 
-This is a *hash*-based algorith. This means collisions are *possible*. The goal is to reduce very large data sets to very small data sets to make fewer, expensive yet precise calculations. There may be 10 *trillion* potentially relavent objects in the data space. Lochash can reduce that to a few or maybe a dozen very quickly and efficiently. It is no garauntee that some irrelevant calculations may be included.
+This is a *hash*-based algorithm. This means collisions are *possible* unless perfect hashing is used (can be slow in inserts, fast on lookups). The goal is to reduce very large data sets to very small data sets to make fewer, expensive yet precise calculations. There may be *billions* of potentially relevant objects in the data space. LocHash can reduce that to a few or maybe a dozen very quickly and efficiently. It is no guarantee that some irrelevant calculations may be included.
 
 For example, a 128-dimension neural network may produce vectorized results for context. A lochash can query and bucket similar results by semantic relavence. This is algorithm is not restricted to physics and message routing.
