@@ -1,6 +1,11 @@
 #ifndef _INCLUDED_location_hash_quantized_coordinate_hpp
 #define _INCLUDED_location_hash_quantized_coordinate_hpp
 
+// --------------------------------------------------------------------------------------------
+// Disable some warnings that are spurious in this context. The standard
+// actually specifies that unknown pragmas should be ignored, but some
+// compilers still complain about them. Support -Wall and -Werror anyway
+// by without warnings for unknown pragmas.
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #endif
@@ -8,6 +13,7 @@
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
 #endif
+// --------------------------------------------------------------------------------------------
 
 #include <array>
 #include <functional>

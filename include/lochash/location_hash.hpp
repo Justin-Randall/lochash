@@ -20,8 +20,16 @@ namespace lochash
 	 *
 	 * @see https://github.com/Justin-Randall/lochash/blob/main/README.md
 	 */
-	template <size_t Precision, typename CoordinateType, size_t Dimensions, typename ObjectType = void,
-	          typename QuantizedCoordinateIntegerType = int64_t>
+	template <
+	    size_t Precision, typename CoordinateType, size_t Dimensions, typename ObjectType = void,
+	    typename QuantizedCoordinateIntegerType = int64_t,
+	    typename Hash =
+	        std::hash<QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>>,
+	    typename KeyEqual =
+	        std::equal_to<QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>>,
+	    typename Allocator = std::allocator<
+	        std::pair<const QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>,
+	                  std::vector<std::pair<std::array<CoordinateType, Dimensions>, ObjectType *>>>>>
 	class LocationHash
 	{
 		static_assert((Precision & (Precision - 1)) == 0, "Precision must be a power of two");
@@ -32,8 +40,8 @@ namespace lochash
 		using CoordinateArray                   = std::array<CoordinateType, Dimensions>;
 		using BucketContent                     = std::vector<std::pair<CoordinateArray, ObjectType *>>;
 		using CoordinateMap                     = std::unordered_map<
-            QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>, BucketContent>;
-
+            QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>, BucketContent,
+            Hash, KeyEqual, Allocator>;
 		using QuantizedCoordinateType =
 		    QuantizedCoordinate<Precision, CoordinateType, Dimensions, QuantizedCoordinateIntegerType>;
 
