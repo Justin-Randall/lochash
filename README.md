@@ -82,7 +82,7 @@ This is a brief clip used solely to visualize the algorithm. It is NOT intended 
 
 There are 2 modes in the visualization: brute-force $O(n^2)$ and leveraging LocHash (amortized constant time lookups). Additionally, there is a visualization showing which objects are checking for collisions with other objects. In the brute force mode, the screen is filled with line draws. Switching to LocHash, there are nearly 0 collision checks with 100 objects in the scene. An additional debug draw for the buckets is also shown, simply to illustrate the point that LocHash is fine for determinig *potentially* interacting objects.
 
-Note 3 data points in the upper left hand of the UI: frame rate, number of objects and number of collision checks.
+Note 3 data points in the upper left hand of the UI: frame rate, number of objects and number of collision checks. During the visualization, in brute-force mode, the frame rate drops to about 10 FPS once about a thousand objects are in the scene. With the LocHash algorithm enabled, note that that number is exceeded with zero impact on the frame rate. This is also a debug build. In release/shipping, tens of thousands may be spawned without much overhead. It is no Niagra or Chaos, which specializes in this sort of thing, but that is not the point of the demonstration.
 
 [![YouTube](http://i.ytimg.com/vi/5gttK_MYwz4/hqdefault.jpg)](https://www.youtube.com/watch?v=5gttK_MYwz4)
 
