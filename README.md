@@ -88,6 +88,8 @@ Note 3 data points in the upper left hand of the UI: frame rate, number of objec
 
 For games, this is primarily a server-side optimization where processing and message routing can be distributed across hundreds or thousands (or more) of processes to deal with scale.
 
+Code for the visualization is here: [https://github.com/Justin-Randall/lochash_ue5demo](https://github.com/Justin-Randall/lochash_ue5demo).
+
 ## Implementation
 
 The implementation relies heavily on the C++ standard library with modern features. Compiler upgrades for optimizations and features come freely. The generated code is already well-optimized, though performance analysis found some slow conversions, so there is optimized assembly for SSE2 or whatever is available on the target platform.
