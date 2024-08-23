@@ -176,7 +176,7 @@ On the topic of games and AI, embedding small models for GPU processing, with th
     // equivalent model) that reads a .bin or .ggml and
     // performs reverse embeddings queries as tokens are
     // streamed back. Then do something crazy with it.
-    schizomap = location_hash<4, float, 196, Token> schizoMap;
+    location_hash<4, float, 196, Token> schizoMap;
 ```
 
 (Yes, this is a ridiculously large map, but games should not be using general purpose, multi-billion parameter models).
