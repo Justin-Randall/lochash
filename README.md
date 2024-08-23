@@ -76,7 +76,17 @@ Grid Representation of Buckets:
 
 Of course, the location hash only allocates space where locations are added.
 
+## Visualization in UE5 Editor
+
+This is a brief clip used solely to visualize the algorithm. It is NOT intended to replace a physics system for a 3D game client. There are better ways to do that. This is solely to help visualize what is happening.
+
+There are 2 modes in the visualization: brute-force $O(n^2)$ and leveraging LocHash (amortized constant time lookups). Additionally, there is a visualization showing which objects are checking for collisions with other objects. In the brute force mode, the screen is filled with line draws. Switching to LocHash, there are nearly 0 collision checks with 100 objects in the scene. An additional debug draw for the buckets is also shown, simply to illustrate the point that LocHash is fine for determinig *potentially* interacting objects.
+
+Note 3 data points in the upper left hand of the UI: frame rate, number of objects and number of collision checks.
+
 [![YouTube](http://i.ytimg.com/vi/5gttK_MYwz4/hqdefault.jpg)](https://www.youtube.com/watch?v=5gttK_MYwz4)
+
+For games, this is primarily a server-side optimization where processing and message routing can be distributed across hundreds or thousands (or more) of processes to deal with scale.
 
 ## Implementation
 
