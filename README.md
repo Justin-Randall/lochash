@@ -162,10 +162,25 @@ set(TEST_COVERAGE_THRESHOLD 98)
 
 ## Other Uses
 
-This *n-dimensional* database is also well-suited for semantic maps or many other applications where various coordinates can aggregate to co-locate datapoints on proximity. For example, matchmaking players on similar traits: their skill on an X axis, their ping on a Y axis, their community rating on a Z axis and maybe throw others in such as "community engagement" on a W axis. Since it is *n*-dimensional, it can supplement semantic mapping along various axes. For example, an AI vector database for images can query on some dimension of "dog-ness vs cat-ness" or other traits that emerge in a model, often without understanding which groupings emerge from training. Modern AI can have dozens or hundreds of dimensions in the data, and it is merely a compile-time parameter for this implementation.
+This *n-dimensional* database is also well-suited for semantic maps or many other applications where various coordinates can aggregate to co-locate datapoints on proximity. It is fairly niche, but only insofar as it is specialized on associating coordinates with data. This algorithm is not restricted to potential interactions and message routing.
+
+For example, matchmaking players on similar traits: their skill on an X axis, their ping on a Y axis, their community rating on a Z axis and maybe throw others in, such as "community engagement" on a W axis. Since it is *n*-dimensional, it can supplement semantic mapping along various axes. For example, an AI vector database for images can query on some dimension of "dog-ness vs cat-ness" or other traits that emerge in a model, often without understanding which groupings emerge from training. Modern AI can have dozens or hundreds of dimensions in the data, and it is merely a compile-time parameter for this implementation.
+
+On the topic of games and AI, embedding small models for GPU processing, with the data set (a .bin or .ggml) included as a game asset, being able to decode (reverse-embedding) to examine tokens and manipulate them for multi-shot queries can produce interesting results that designers may leverage. If dimensionality of the model is known at compile-time, something like LocHash is optimized for reverse-embedding queries. This is a bleeding edge technology for game developers and more research is needed in this area.
+
+`llama.cpp` can be embdeded to leverage those input files and yield outputs, but is not particularly optimized for reverse-embedding or doing other interesting things with the model internals. If the vectorized map of tokens is available, and the dimensions particular to the model being used for the game is known at compile time, LocHash may be far more performant.
+
+```cpp
+    // create a map with a bucket precision of 4, with 
+    // 196-dimension vectors of floats (like a GPT-4 
+    // equivalent model) that reads a .bin or .ggml and
+    // performs reverse embeddings queries as tokens are
+    // streamed back. Then do something crazy with it.
+    schizomap = location_hash<4, float, 196, Token> schizoMap;
+```
+
+(Yes, this is a ridiculously large map, but games should not be using general purpose, multi-billion parameter models).
 
 ## Caveat
 
 This is a *hash*-based algorithm. This means collisions are *possible* unless perfect hashing is used (can be slow in inserts, fast on lookups). The goal is to reduce very large data sets to very small data sets to make fewer, expensive yet precise calculations. There may be *billions* of potentially relevant objects in the data space. LocHash can reduce that to a few or maybe a dozen very quickly and efficiently. It is no guarantee that some irrelevant calculations may be included.
-
-For example, a 128-dimension neural network may produce vectorized results for context. A lochash can query and bucket similar results by semantic relavence. This is algorithm is not restricted to physics and message routing.
