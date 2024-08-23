@@ -143,9 +143,22 @@ There are similar optimizations for equality comparison operations. These used t
 
 Drop-in standard library replacements fine-tuned for specific applications, such as gaming or AI, should work if they are API compliant (allocators, hash functions based on special knowledge of the data being used, etc...).
 
-There is liberal use of static_assert<> to unsnarl the worst of compiler errors with template instantiation output to direct users away from improper usage (things like mixing types for coordinates, for example).
+There is liberal use of static_assert<> to unsnarl the worst of compiler errors with template instantiation output to direct users away from improper usage (things like mixing types for coordinates, for example). Note (above) liberal use of constexpr conditionals to avoid runtime branching (which can be ridiculously slow, even on modern systems). This emits code with no branching when varaibles are known at compile time (such as the number of elements in a coordinate vector, the type of number used, etc...).
 
-Also note that it has a decent test suite with coverage reporting. If coverage falls below 98%, the build breaks. It is based on [tdd-cmake-template](https://github.com/Justin-Randall/tdd-cmake-template), another project that may be of use for C++ coders starting new projects using TDD and CMake.
+Also note that it has a decent test suite with coverage reporting. If coverage falls below 98%, the build breaks. It is based on [tdd-cmake-template](https://github.com/Justin-Randall/tdd-cmake-template), another project that may be of use for C++ coders starting new projects using TDD and CMake. The 98% threshold is set in `tests/CMakeLists.txt`:
+
+```cmake
+# ###############################################
+# Configuration Variables
+#
+# Set this to whatever the best coverage report
+# has produced. Recommend to always INCREASE it
+# because BETTER is BETTER and 100 is BEST.
+# Defaults to 100 since this template should
+# always have 100% coverage before committing to
+# source control.
+set(TEST_COVERAGE_THRESHOLD 98)
+```
 
 ## Other Uses
 
