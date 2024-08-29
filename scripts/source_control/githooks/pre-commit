@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Assumes this is called from the project root. 
+# Be sure the working directory is correct when
+# running this script.
+
+echo "Running precommit hook"
+
+# run cmake build
+pushd ./build
+cmake --build . --config debug
+if [ $? -ne 0 ]; then
+    echo "CMake build failed. Aborting commit."
+    popd
+    exit 1
+fi
+popd
+
+# run ctest
+pushd ./build
+ctest --build-config debug --output-on-failure
+if [ $? -ne 0 ]; then
+    echo "Tests failed. Aborting commit."
+    popd
+    exit 1
+fi
+popd
+
+# Run coverage cmake target, which checks a 
+# coverage threshold and fails the build if it's not met.
+pushd ./build
+cmake --build . --target coverage
+if [ $? -ne 0 ]; then
+    echo "Coverage build failed. Aborting commit."
+    popd
+    exit 1
+fi
+popd

@@ -75,7 +75,7 @@ find_program(GCOVR_BINARY gcovr)
 add_custom_target(coverage
 
   # ALL # Cannot be ALL because it wrecks the CI build on GitHub Actions
-  DEPENDS ${UNIT_TEST}
+  DEPENDS ${UNIT_TEST} LocalGitConfiguration
   COMMAND ${UNIT_TEST}
   COMMENT "Run coverage report and tests"
   WORKING_DIRECTORY ${CMAKE_TEST_DIRECTORY}
